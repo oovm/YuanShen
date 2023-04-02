@@ -1,0 +1,26 @@
+[package]
+name = "yuan-shen"
+version = "0.0.0"
+authors = ["Aster <192607617@qq.com>"]
+description = "A modern source code and asset version management system"
+repository = "https://github.com/oovm/YuanShen"
+documentation = "https://docs.rs/yuan-shen"
+readme = "readme.md"
+license = "MPL-2.0"
+edition = "2021"
+exclude = ["package.json", "tests/**"]
+
+[dependencies]
+clap = { version = "4.2.5", features = ["derive"] }
+
+[dependencies.ys-core]
+version = "0.0.*"
+path = "../ys-core"
+
+[dev-dependencies]
+
+[features]
+default = []
+
+[package.metadata.docs.rs]
+all-features = true
