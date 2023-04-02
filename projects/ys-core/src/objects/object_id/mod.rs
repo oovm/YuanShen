@@ -1,4 +1,3 @@
-
 use blake3::Hash;
 use serde::{Deserialize, Serialize};
 
@@ -9,6 +8,7 @@ use std::{
     path::Path,
 };
 use serde::{Deserializer, Serializer};
+
 #[cfg(test)]
 mod tests;
 mod convert;
@@ -16,7 +16,7 @@ mod convert;
 /// 256 位对象 ID
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct ObjectID {
-    hash256: Hash
+    hash256: Hash,
 }
 
 impl Ord for ObjectID {
@@ -33,8 +33,10 @@ impl PartialOrd for ObjectID {
 
 impl Display for ObjectID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let b: &[u8] = self.hash256.as_bytes();
-        write!(f, "{}", std::str::from_utf8(b).unwrap())
+        for byte in self.hash256.as_bytes() {
+            write!(f, "{:02x}", byte)?;
+        }
+        Ok(())
     }
 }
 

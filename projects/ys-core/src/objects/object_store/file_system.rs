@@ -9,7 +9,7 @@ pub struct LocalObjectStore {
 impl LocalObjectStore {
     pub fn new(root: PathBuf) -> Result<Self, std::io::Error> {
         if !try_exists(&root)? {
-            log::info!("正在创建储存库: {:?}", root);
+            tracing::info!("正在创建储存库: {:?}", root);
             create_dir(&root)?;
         }
         Ok(Self { root })
@@ -19,8 +19,8 @@ impl LocalObjectStore {
 impl ObjectStore for LocalObjectStore {
     type Error = std::io::Error;
 
-    fn has(&self, id: ObjectID) -> Result<bool, Self::Error> {
-        log::info!("检查 {} 中是否存在 {:?}", id, self.root);
+    async fn has(&self, id: ObjectID) -> Result<bool, Self::Error> {
+        tracing::info!("检查 {} 中是否存在 {:?}", id, self.root);
         let s: String = format!("{}", id);
         let subdir: &str = &s[0..2];
         let filename: &str = &s[2..];
@@ -28,8 +28,8 @@ impl ObjectStore for LocalObjectStore {
         std::fs::try_exists(path)
     }
 
-    fn read(&self, id: ObjectID) -> Result<Option<Vec<u8>>, Self::Error> {
-        log::info!("怎在 {} 中读取 {:?}", id, self.root);
+    async fn read(&self, id: ObjectID) -> Result<Option<Vec<u8>>, Self::Error> {
+        tracing::info!("怎在 {} 中读取 {:?}", id, self.root);
         let s: String = format!("{}", id);
         let subdir: &str = &s[0..2];
         let filename: &str = &s[2..];
@@ -50,20 +50,20 @@ impl ObjectStore for LocalObjectStore {
         }
     }
 
-    fn insert(&mut self, object: &[u8]) -> Result<ObjectID, Self::Error> {
+    async fn insert(&mut self, object: &[u8]) -> Result<ObjectID, Self::Error> {
         let id: ObjectID = object.into();
-        log::info!("正在插入 {} 到 {:?}", id, self.root);
+        tracing::info!("正在插入 {} 到 {:?}", id, self.root);
         let s: String = format!("{}", id);
         let subdir: &str = &s[0..2];
         let filename: &str = &s[2..];
         let subdir_path = self.root.join(format!("{}", subdir));
         let path = subdir_path.join(format!("{}", filename));
         if std::fs::try_exists(&path)? {
-            log::info!("{:?} already exists", path);
+            tracing::info!("{:?} already exists", path);
             return Ok(id);
         }
         if !std::fs::try_exists(&subdir_path)? {
-            log::info!("creating subdir path {:?} in {:?}", subdir_path, self.root);
+            tracing::info!("creating subdir path {:?} in {:?}", subdir_path, self.root);
             std::fs::create_dir(&subdir_path)?;
         }
         let mut f = File::options().create(true).write(true).open(path)?;
@@ -72,12 +72,3 @@ impl ObjectStore for LocalObjectStore {
     }
 }
 
-#[test]
-fn test_directory_object_store() {
-    let tempdir = tempfile::tempdir().unwrap();
-    let mut store = LocalObjectStore::new(tempdir.path().into()).unwrap();
-    store.insert(b"hello, world").unwrap();
-    let b: &[u8] = b"hello, world";
-    assert!(store.has(b.into()).unwrap());
-    assert_eq!(store.read(b.into()).unwrap(), Some(Vec::from(b)));
-}

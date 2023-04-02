@@ -1,4 +1,4 @@
-use crate::{ObjectID, ObjectStore};
+use crate::{ObjectID};
 use std::{
     collections::{btree_map::Entry, BTreeMap},
     convert::Infallible,
