@@ -13,7 +13,7 @@ async fn test_memory_object_store() {
     store.insert(YUAN_SHEN).await.unwrap();
 
     assert!(store.has(YUAN_SHEN.into()).await.unwrap());
-    assert_eq!(store.read(YUAN_SHEN.into()).await.unwrap(), Some(Vec::from(YUAN_SHEN)));
+    assert_eq!(store.read(YUAN_SHEN.into()).await.unwrap(), Vec::from(YUAN_SHEN));
 }
 
 
@@ -23,5 +23,5 @@ async fn test_local_object_store() {
     let mut store = LocalObjectStore::new(temp.path().into()).unwrap();
     store.insert(YUAN_SHEN).await.unwrap();
     assert!(store.has(YUAN_SHEN.into()).await.unwrap());
-    assert_eq!(store.read(YUAN_SHEN.into()).await.unwrap(), Some(Vec::from(YUAN_SHEN)));
+    assert_eq!(store.read(YUAN_SHEN.into()).await.unwrap(), Vec::from(YUAN_SHEN));
 }

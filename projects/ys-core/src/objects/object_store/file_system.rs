@@ -1,12 +1,15 @@
+use std::fs::{create_dir, try_exists};
 use super::*;
 
 
+/// 本地文件系统对象储存
 #[derive(Debug, Clone)]
 pub struct LocalObjectStore {
     root: PathBuf,
 }
 
 impl LocalObjectStore {
+    /// 创建一个本地文件系统对象储存
     pub fn new(root: PathBuf) -> Result<Self, std::io::Error> {
         if !try_exists(&root)? {
             tracing::info!("正在创建储存库: {:?}", root);
@@ -16,47 +19,45 @@ impl LocalObjectStore {
     }
 }
 
+const HASH_HEADER_LENGTH: usize = 2;
+
 impl ObjectStore for LocalObjectStore {
     type Error = std::io::Error;
 
     async fn has(&self, id: ObjectID) -> Result<bool, Self::Error> {
-        tracing::info!("检查 {} 中是否存在 {:?}", id, self.root);
+        tracing::trace!("检查 {} 中是否存在 {:?}", id, self.root);
         let s: String = format!("{}", id);
-        let subdir: &str = &s[0..2];
-        let filename: &str = &s[2..];
-        let path = self.root.join(format!("{}/{}", subdir, filename));
+        let dir: &str = &s[0..HASH_HEADER_LENGTH];
+        let filename: &str = &s[HASH_HEADER_LENGTH..];
+        let path = self.root.join(format!("{}/{}", dir, filename));
         std::fs::try_exists(path)
     }
 
-    async fn read(&self, id: ObjectID) -> Result<Option<Vec<u8>>, Self::Error> {
-        tracing::info!("怎在 {} 中读取 {:?}", id, self.root);
+    async fn read(&self, id: ObjectID) -> Result<Vec<u8>, Self::Error> {
+        tracing::trace!("怎在 {} 中读取 {:?}", id, self.root);
         let s: String = format!("{}", id);
-        let subdir: &str = &s[0..2];
-        let filename: &str = &s[2..];
-        let path = self.root.join(format!("{}/{}", subdir, filename));
+        let dir: &str = &s[0..HASH_HEADER_LENGTH];
+        let filename: &str = &s[HASH_HEADER_LENGTH..];
+        let path = self.root.join(format!("{}/{}", dir, filename));
         match std::fs::File::options().read(true).open(path) {
             Ok(mut f) => {
                 let mut v = Vec::new();
                 f.read_to_end(&mut v)?;
-                Ok(Some(v))
+                Ok(v)
             }
             Err(err) => {
-                if err.kind() == ErrorKind::NotFound {
-                    Ok(None)
-                } else {
-                    Err(err)
-                }
+                Err(err)
             }
         }
     }
 
     async fn insert(&mut self, object: &[u8]) -> Result<ObjectID, Self::Error> {
         let id: ObjectID = object.into();
-        tracing::info!("正在插入 {} 到 {:?}", id, self.root);
+        tracing::trace!("正在插入 {} 到 {:?}", id, self.root);
         let s: String = format!("{}", id);
-        let subdir: &str = &s[0..2];
-        let filename: &str = &s[2..];
-        let subdir_path = self.root.join(format!("{}", subdir));
+        let sub: &str = &s[0..HASH_HEADER_LENGTH];
+        let filename: &str = &s[HASH_HEADER_LENGTH..];
+        let subdir_path = self.root.join(format!("{}", sub));
         let path = subdir_path.join(format!("{}", filename));
         if std::fs::try_exists(&path)? {
             tracing::info!("{:?} already exists", path);
