@@ -12,12 +12,16 @@ exclude = ["package.json", "tests/**"]
 
 [dependencies]
 clap = { version = "4.2.5", features = ["derive"] }
+tokio = { version = "1.37.0", features = ["full"] }
+serde_json = "1.0.115"
 
 [dependencies.ys-core]
 version = "0.0.*"
 path = "../ys-core"
 
 [dev-dependencies]
+
+
 
 [features]
 default = []
