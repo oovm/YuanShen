@@ -8,6 +8,7 @@
 mod errors;
 mod objects;
 mod snapshot;
+mod directory;
 
 pub use crate::errors::{Result};
 pub use crate::errors::{YsErrorKind, YsError};
