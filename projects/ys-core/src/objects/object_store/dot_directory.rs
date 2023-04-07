@@ -4,15 +4,12 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, };
 use std::future::Future;
 use serde::{Deserialize, Serialize};
-use crate::{
-    directory::{SnapShotDirectory, Ignores},
-    LocalObjectStore,
-    ObjectID, ObjectStore, snapshot::SnapShot,
-};
+use crate::{Ignores, LocalObjectStore, ObjectID, ObjectStore, snapshot::SnapShot};
 use crate::errors::YsError;
+use crate::snapshot::directory::SnapShotDirectory;
 use crate::snapshot::SnapShotData;
 
 /// `.ys` 文件夹
@@ -20,7 +17,6 @@ use crate::snapshot::SnapShotData;
 pub struct DotYuanShen {
     root: PathBuf,
 }
-
 
 impl DotYuanShen {
     pub async fn new(root: PathBuf) -> Result<Self, YsError> {
@@ -55,7 +51,11 @@ impl DotYuanShen {
 
         Ok(DotYuanShen { root })
     }
+    /// 打开一个已经存在的 `.ys` 文件夹
     pub fn open(root: PathBuf) -> Result<Self, YsError> {
+        if !try_exists(&root)? {
+            return Err(YsError::new(format!("{} is not a valid ys directory", root.display())));
+        }
         // TODO: check valid
         Ok(DotYuanShen { root })
     }

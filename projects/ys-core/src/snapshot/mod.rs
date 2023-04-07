@@ -1,9 +1,13 @@
 use std::collections::BTreeSet;
-
+use std::fmt::Display;
+use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use crate::ObjectID;
+use std::collections::BTreeMap;
+use crate::{DirectoryEntry, SnapShotDirectory};
 
-mod directory;
+pub mod directory;
+pub mod difference;
 
 /// 快照
 #[derive(Debug, Clone, Serialize, Deserialize)]

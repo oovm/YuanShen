@@ -10,9 +10,10 @@ mod objects;
 mod snapshot;
 
 
+
 pub use crate::errors::{Result};
 pub use crate::errors::{YsErrorKind, YsError};
 pub use crate::objects::object_id::ObjectID;
 pub use crate::objects::object_store::{ObjectStore, in_memory::MemoryObjectStore, file_system::LocalObjectStore};
-pub use crate::snapshot::{SnapShot, SnapShotData};
+pub use crate::snapshot::{SnapShot, SnapShotData, difference::{ SnapShotDifference, DifferenceEntry}, directory::{DirectoryEntry, Ignores, SnapShotDirectory}};
 pub use crate::objects::object_store::dot_directory::{DotYuanShen, InsertJson};
