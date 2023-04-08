@@ -1,10 +1,15 @@
-use std::env::current_dir;
 use clap::Args;
+use std::env::current_dir;
 use ys_core::{DotYuanShen, Ignores, InsertJson, ObjectID, SnapShot, SnapShotData, SnapShotDirectory, YsError};
 
 #[derive(Debug, Args)]
 pub struct YuanShenCommit {
+    #[clap(short, long)]
     message: String,
+    #[clap(long)]
+    author: Option<String>,
+    #[clap(long)]
+    data: Option<String>,
 }
 
 impl YuanShenCommit {
@@ -21,7 +26,7 @@ impl YuanShenCommit {
         let snap = SnapShot {
             directory: directory_id,
             previous: vec![old_tip].into_iter().collect(),
-            data: SnapShotData { kind: 0, self.message },
+            data: SnapShotData { kind: 0, message: self.message },
         };
         let snap_id = store.insert_json(&snap).await.unwrap();
         dot_rev.set_branch_snapshot_id(&branch, snap_id)
