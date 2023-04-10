@@ -1,5 +1,5 @@
 
-```shell
+```
 usage: git commit [-a | --interactive | --patch] [-s] [-v] [-u<mode>] [--amend]
                   [--dry-run] [(-c | -C | --squash) <commit> | --fixup [(amend|reword):]<commit>)]
                   [-F <file> | -m <msg>] [--reset-author] [--allow-empty]

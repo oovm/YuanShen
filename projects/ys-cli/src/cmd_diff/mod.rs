@@ -1,7 +1,7 @@
 use std::env::current_dir;
 use std::process::exit;
 use clap::Args;
-use ys_core::{DotYuanShen, ObjectID, SnapShot, SnapShotDirectory, YsError};
+use ys_core::{DotYuanShen, InsertJson, ObjectID, SnapShot, SnapShotDirectory, YsError};
 
 #[derive(Debug, Args)]
 pub struct YuanShenDifference {
@@ -9,7 +9,7 @@ pub struct YuanShenDifference {
 }
 
 impl YuanShenDifference {
-    pub async fn run(&self) -> Result<(), YsError> {
+    pub async fn difference(self) -> Result<(), YsError> {
         let dir = current_dir().unwrap();
         let rev_dir = dir.join(".ys");
         let dot_rev = DotYuanShen::open(rev_dir).unwrap();
