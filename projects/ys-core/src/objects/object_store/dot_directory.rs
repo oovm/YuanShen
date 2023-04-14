@@ -1,16 +1,17 @@
+use crate::{
+    errors::YsError,
+    snapshot::{directory::SnapShotDirectory, SnapShot, SnapShotData},
+    Ignores, LocalObjectStore, ObjectID, ObjectStore,
+};
+use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeSet,
-    fs::{create_dir, create_dir_all, File, read_dir, read_to_string, try_exists},
+    fmt::Debug,
+    fs::{create_dir, create_dir_all, read_dir, read_to_string, try_exists, File},
+    future::Future,
     io::Write,
     path::{Path, PathBuf},
 };
-use std::fmt::{Debug, };
-use std::future::Future;
-use serde::{Deserialize, Serialize};
-use crate::{Ignores, LocalObjectStore, ObjectID, ObjectStore, snapshot::SnapShot};
-use crate::errors::YsError;
-use crate::snapshot::directory::SnapShotDirectory;
-use crate::snapshot::SnapShotData;
 
 /// `.ys` 文件夹
 #[derive(Debug)]
@@ -26,10 +27,7 @@ impl DotYuanShen {
         create_dir_all(&root)?;
 
         // 开启 dev 分支
-        let mut file = File::options()
-            .create(true)
-            .write(true)
-            .open(&root.join("branch"))?;
+        let mut file = File::options().create(true).write(true).open(&root.join("branch"))?;
         file.write("dev".as_bytes())?;
 
         // 创建分支文件夹
@@ -42,7 +40,7 @@ impl DotYuanShen {
         let snapshot = SnapShot {
             directory,
             previous: BTreeSet::new(),
-            data: SnapShotData { kind: 0, message: "init".to_string() },
+            data: SnapShotData { kind: 0, message: "init".to_string(), authors: Default::default() },
         };
         let snapshot_id = store.insert_json(&snapshot).await?;
         write_json(&snapshot_id, &root.join("branches").join("dev"))?;
@@ -53,11 +51,13 @@ impl DotYuanShen {
     }
     /// 打开一个已经存在的 `.ys` 文件夹
     pub fn open(root: PathBuf) -> Result<Self, YsError> {
-        if !try_exists(&root)? {
-            return Err(YsError::new(format!("{} is not a valid ys directory", root.display())));
+        if root.exists() {
+            // TODO: check valid
+            Ok(DotYuanShen { root })
         }
-        // TODO: check valid
-        Ok(DotYuanShen { root })
+        else {
+            Err(YsError::path_error(std::io::Error::new(std::io::ErrorKind::NotFound, "Directory does not exist"), root))
+        }
     }
 }
 
@@ -66,16 +66,12 @@ impl DotYuanShen {
         &self.root
     }
 
-
     pub fn get_branch(&self) -> Result<String, YsError> {
         Ok(read_to_string(&self.root.join("branch"))?)
     }
 
     pub fn set_branch(&self, new: &str) -> Result<(), YsError> {
-        let mut file = File::options()
-            .write(true)
-            .truncate(true)
-            .open(&self.root.join("branch"))?;
+        let mut file = File::options().write(true).truncate(true).open(&self.root.join("branch"))?;
         file.write(new.as_bytes())?;
         Ok(())
     }
@@ -115,9 +111,9 @@ impl DotYuanShen {
 }
 
 pub trait InsertJson {
-    fn insert_json<A: Serialize + Send + Sync>(&mut self, thing: &A) -> impl Future<Output=Result<ObjectID, YsError>> + Send;
+    fn insert_json<A: Serialize + Send + Sync>(&mut self, thing: &A) -> impl Future<Output = Result<ObjectID, YsError>> + Send;
 
-    fn read_json<A: for<'de> Deserialize<'de>>(&mut self, id: ObjectID) -> impl Future<Output=Result<A, YsError>> + Send;
+    fn read_json<A: for<'de> Deserialize<'de>>(&mut self, id: ObjectID) -> impl Future<Output = Result<A, YsError>> + Send;
 }
 
 impl InsertJson for LocalObjectStore {
@@ -125,24 +121,16 @@ impl InsertJson for LocalObjectStore {
         Ok(self.insert(&serde_json::to_vec_pretty(thing)?).await?)
     }
 
-    async fn read_json<A: for<'de> Deserialize<'de>>(
-        &mut self,
-        object_id: ObjectID,
-    ) -> Result<A, YsError> {
+    async fn read_json<A: for<'de> Deserialize<'de>>(&mut self, object_id: ObjectID) -> Result<A, YsError> {
         let object = self.read(object_id).await?;
         Ok(serde_json::from_slice(&object)?)
     }
 }
 
 fn read_json<A: for<'de> Deserialize<'de>>(path: &Path) -> Result<A, YsError> {
-    Ok(serde_json::from_reader(
-        File::options().read(true).open(path)?,
-    )?)
+    Ok(serde_json::from_reader(File::options().read(true).open(path)?)?)
 }
 
 fn write_json<A: Serialize>(thing: &A, path: &Path) -> Result<(), YsError> {
-    Ok(serde_json::to_writer_pretty(
-        File::options().write(true).create(true).open(path)?,
-        thing,
-    )?)
+    Ok(serde_json::to_writer_pretty(File::options().write(true).create(true).open(path)?, thing)?)
 }

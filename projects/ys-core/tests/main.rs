@@ -3,8 +3,8 @@ use std::{
     env::current_dir,
 };
 use ys_core::{
-    DifferenceEntry, DirectoryEntry, Ignores, LocalObjectStore, MemoryObjectStore, ObjectID, ObjectStore, SnapShotDifference,
-    SnapShotDirectory,
+    differences::{DifferenceEntry, SnapShotDifference},
+    DirectoryEntry, Ignores, LocalObjectStore, MemoryObjectStore, ObjectID, ObjectStore, SnapShotDirectory,
 };
 
 #[test]

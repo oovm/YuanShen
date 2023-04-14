@@ -1,13 +1,17 @@
-use std::collections::BTreeSet;
-use std::fmt::Display;
-use std::path::PathBuf;
-use serde::{Deserialize, Serialize};
-use crate::ObjectID;
-use std::collections::BTreeMap;
-use crate::{DirectoryEntry, SnapShotDirectory};
+use crate::{AuthorID, DirectoryEntry, ObjectID, SnapShotDirectory};
+use blake3::Hash;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt::{Display, Formatter},
+    path::PathBuf,
+    time::SystemTime,
+};
+use std::cmp::Ordering;
 
+pub mod differences;
 pub mod directory;
-pub mod difference;
+
 
 /// 快照
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,10 +29,19 @@ pub struct SnapShotData {
     pub kind: u32,
     /// The message added with the commit.
     pub message: String,
+    /// The author ids of the commit.
+    pub authors: BTreeSet<AuthorID>,
+    // pub datetime: SystemTime
+}
+
+#[derive(Copy, Debug, Clone)]
+pub enum SnapShotKind {
+    Initialization = 0,
+    Fix,
+    Test,
 }
 
 impl Eq for SnapShot {}
-
 
 impl PartialEq for SnapShot {
     fn eq(&self, other: &Self) -> bool {
@@ -36,5 +49,3 @@ impl PartialEq for SnapShot {
         self.directory.eq(&other.directory) && self.previous.eq(&other.previous)
     }
 }
-
-

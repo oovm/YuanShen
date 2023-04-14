@@ -9,11 +9,21 @@ mod errors;
 mod objects;
 mod snapshot;
 
-
-
-pub use crate::errors::{Result};
-pub use crate::errors::{YsErrorKind, YsError};
-pub use crate::objects::object_id::ObjectID;
-pub use crate::objects::object_store::{ObjectStore, in_memory::MemoryObjectStore, file_system::LocalObjectStore};
-pub use crate::snapshot::{SnapShot, SnapShotData, difference::{ SnapShotDifference, DifferenceEntry}, directory::{DirectoryEntry, Ignores, SnapShotDirectory}};
-pub use crate::objects::object_store::dot_directory::{DotYuanShen, InsertJson};
+pub use crate::{
+    errors::{Result, YsError, YsErrorKind},
+    objects::{
+        object_id::ObjectID,
+        author_id::AuthorID,
+        object_store::{
+            dot_directory::{DotYuanShen, InsertJson},
+            file_system::LocalObjectStore,
+            in_memory::MemoryObjectStore,
+            ObjectStore,
+        },
+    },
+    snapshot::{
+        differences,
+        directory::{DirectoryEntry, Ignores, SnapShotDirectory},
+        SnapShot, SnapShotData,
+    },
+};
