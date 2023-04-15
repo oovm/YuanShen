@@ -40,7 +40,7 @@ impl DotYuanShen {
         let snapshot = SnapShot {
             directory,
             previous: BTreeSet::new(),
-            data: SnapShotData { kind: 0, message: "init".to_string(), authors: Default::default() },
+            data: SnapShotData { kind: 0, message: "Project initialized!".to_string(), authors: Default::default() },
         };
         let snapshot_id = store.insert_json(&snapshot).await?;
         write_json(&snapshot_id, &root.join("branches").join("dev"))?;

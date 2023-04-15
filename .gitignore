@@ -12,3 +12,7 @@ time-travel.*
 # Rust
 target/
 Cargo.lock
+
+
+# YuanShen
+.ys/

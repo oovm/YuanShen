@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Eq, Debug, Clone)]
+#[derive(Copy, Clone, Debug, Eq)]
 pub struct AuthorID {
     hash256: Hash,
 }
@@ -13,13 +13,13 @@ impl PartialEq for AuthorID {
 
 impl PartialOrd for AuthorID {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.hash256.partial_cmp(&other.hash256)
+        self.hash256.as_bytes().partial_cmp(&other.hash256.as_bytes())
     }
 }
 
 impl Ord for AuthorID {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.hash256.partial_cmp(&other.hash256)
+        self.hash256.as_bytes().cmp(&other.hash256.as_bytes())
     }
 }
 

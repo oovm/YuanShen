@@ -13,7 +13,7 @@ pub struct YuanShenCommit {
 }
 
 impl YuanShenCommit {
-    pub async fn run(self) -> Result<(), YsError> {
+    pub async fn commit(self) -> Result<(), YsError> {
         let dir = current_dir()?;
         let rev_dir = dir.join(".ys");
         let dot_rev = DotYuanShen::open(rev_dir).unwrap();
@@ -26,7 +26,7 @@ impl YuanShenCommit {
         let snap = SnapShot {
             directory: directory_id,
             previous: vec![old_tip].into_iter().collect(),
-            data: SnapShotData { kind: 0, message: self.message },
+            data: SnapShotData { kind: 0, message: self.message, authors: Default::default() },
         };
         let snap_id = store.insert_json(&snap).await.unwrap();
         dot_rev.set_branch_snapshot_id(&branch, snap_id)
