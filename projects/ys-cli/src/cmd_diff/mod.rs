@@ -1,7 +1,8 @@
 use std::env::current_dir;
 use std::process::exit;
 use clap::Args;
-use ys_core::{DotYuanShen, InsertJson, ObjectID, SnapShot, SnapShotDirectory, YsError};
+use ys_core::{ ObjectID, SnapShot, SnapShotDirectory, YsError};
+use ys_core::initialize::{DotYuanShen, InsertJson};
 
 #[derive(Debug, Args)]
 pub struct YuanShenDifference {

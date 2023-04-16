@@ -1,6 +1,7 @@
 use clap::Args;
 use std::env::current_dir;
-use ys_core::{DotYuanShen, Ignores, InsertJson, ObjectID, SnapShot, SnapShotData, SnapShotDirectory, YsError};
+use ys_core::{YsError};
+use ys_core::initialize::{DotYuanShen, InitializeConfig};
 
 #[derive(Debug, Args)]
 pub struct YuanShenCheckout {

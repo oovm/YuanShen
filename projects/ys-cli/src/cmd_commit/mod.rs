@@ -1,6 +1,7 @@
 use clap::Args;
 use std::env::current_dir;
-use ys_core::{DotYuanShen, Ignores, InsertJson, ObjectID, SnapShot, SnapShotData, SnapShotDirectory, YsError};
+use ys_core::{ Ignores,  ObjectID, SnapShot, SnapShotData, SnapShotDirectory, YsError};
+use ys_core::initialize::{DotYuanShen, InsertJson};
 
 #[derive(Debug, Args)]
 pub struct YuanShenCommit {

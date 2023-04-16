@@ -5,6 +5,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use std::{
+    borrow::Cow,
     collections::BTreeSet,
     fmt::Debug,
     fs::{create_dir, create_dir_all, read_dir, read_to_string, try_exists, File},
@@ -18,23 +19,23 @@ use std::{
 pub struct DotYuanShen {
     root: PathBuf,
 }
+#[derive(Debug)]
+pub struct InitializeConfig {
+    pub current: PathBuf,
+    pub initial_branch: Cow<'static, str>,
+}
 
-impl DotYuanShen {
-    pub async fn new(root: PathBuf) -> Result<Self, YsError> {
+impl InitializeConfig {
+    pub async fn new(&self) -> Result<DotYuanShen, YsError> {
+        let root = self.current.join(".ys");
         if read_dir(&root).is_ok() {
-            return Ok(Self { root });
+            return Ok(DotYuanShen { root });
         }
         create_dir_all(&root)?;
-
-        // 开启 dev 分支
-        let mut file = File::options().create(true).write(true).open(&root.join("branch"))?;
-        file.write("dev".as_bytes())?;
-
-        // 创建分支文件夹
-        create_dir(&root.join("branches"))?;
-
+        self.generate_branches()?;
+        
         // 创建初始提交
-        let mut store = LocalObjectStore::new(root.join("store"))?;
+        let mut store = LocalObjectStore::new(self.join("store"))?;
         let directory = SnapShotDirectory::default();
         let directory = store.insert_json(&directory).await?;
         let snapshot = SnapShot {
@@ -43,17 +44,31 @@ impl DotYuanShen {
             data: SnapShotData { kind: 0, message: "Project initialized!".to_string(), authors: Default::default() },
         };
         let snapshot_id = store.insert_json(&snapshot).await?;
-        write_json(&snapshot_id, &root.join("branches").join("dev"))?;
+        write_json(&snapshot_id, &root.join("branches").join(self.initial_branch.as_ref()))?;
         let ignores = Ignores::default();
         write_json(&ignores, &root.join("ignores"))?;
 
         Ok(DotYuanShen { root })
     }
+
+    fn generate_branches(&self) -> std::io::Result<()> {
+        // Specify the current branch
+        let mut file = File::options().create(true).write(true).open(self.join("branch"))?;
+        file.write(self.initial_branch.as_bytes())?;
+        // Create the default branch
+        create_dir(self.join("branches"))
+    }
+
+    fn join(&self, path: &str) -> PathBuf {
+        self.current.join(crate::DOT_YUAN_SHEN).join(path)
+    }
+}
+impl DotYuanShen {
     /// 打开一个已经存在的 `.ys` 文件夹
     pub fn open(root: PathBuf) -> Result<Self, YsError> {
         if root.exists() {
             // TODO: check valid
-            Ok(DotYuanShen { root })
+            Ok(Self { root })
         }
         else {
             Err(YsError::path_error(std::io::Error::new(std::io::ErrorKind::NotFound, "Directory does not exist"), root))

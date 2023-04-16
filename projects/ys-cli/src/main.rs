@@ -2,7 +2,8 @@
 
 use std::{env::current_dir, fmt::Debug, io::stdout};
 use clap::{Args, Parser, Subcommand};
-use ys_core::{DotYuanShen, Ignores, InsertJson, ObjectID, SnapShot, SnapShotDirectory, YsError};
+use ys_core::{ Ignores,  ObjectID, SnapShot, SnapShotDirectory, YsError};
+use ys_core::initialize::{DotYuanShen, InitializeConfig, InsertJson};
 pub use crate::{
     cmd_checkout::YuanShenCheckout, cmd_commit::YuanShenCommit, cmd_diff::YuanShenDifference, cmd_init::YuanShenInitialize,
 };

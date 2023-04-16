@@ -3,7 +3,7 @@ use super::*;
 
 pub mod file_system;
 pub mod in_memory;
-pub mod dot_directory;
+
 
 
 /// 对象储存位置的通用接口，定义了在内存、目录或网络中存储、读取和检查对象的基本操作。

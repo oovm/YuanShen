@@ -15,7 +15,7 @@ pub use crate::{
         object_id::ObjectID,
         author_id::AuthorID,
         object_store::{
-            dot_directory::{DotYuanShen, InsertJson},
+
             file_system::LocalObjectStore,
             in_memory::MemoryObjectStore,
             ObjectStore,
@@ -23,7 +23,10 @@ pub use crate::{
     },
     snapshot::{
         differences,
+        initialize,
         directory::{DirectoryEntry, Ignores, SnapShotDirectory},
         SnapShot, SnapShotData,
     },
 };
+
+const DOT_YUAN_SHEN: &'static str = ".ys";
