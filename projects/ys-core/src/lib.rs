@@ -9,24 +9,20 @@ mod errors;
 mod objects;
 mod snapshot;
 
+const DOT_YUAN_SHEN: &'static str = ".ys";
+const BRANCHES_DIRECTORY: &'static str = "branches";
+const CURRENT_BRANCH_FILE: &'static str = "branch";
+
 pub use crate::{
     errors::{Result, YsError, YsErrorKind},
     objects::{
-        object_id::ObjectID,
         author_id::AuthorID,
-        object_store::{
-
-            file_system::LocalObjectStore,
-            in_memory::MemoryObjectStore,
-            ObjectStore,
-        },
+        object_id::ObjectID,
+        object_store::{file_system::LocalObjectStore, in_memory::MemoryObjectStore, ObjectStore},
     },
     snapshot::{
         differences,
-        initialize,
         directory::{DirectoryEntry, Ignores, SnapShotDirectory},
-        SnapShot, SnapShotData,
+        initialize, SnapShot, SnapShotData,
     },
 };
-
-const DOT_YUAN_SHEN: &'static str = ".ys";

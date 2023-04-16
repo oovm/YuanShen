@@ -1,9 +1,6 @@
-use crate::{
-    errors::YsError,
-    snapshot::{directory::SnapShotDirectory, SnapShot, SnapShotData},
-    Ignores, LocalObjectStore, ObjectID, ObjectStore,
-};
+use crate::{errors::YsError, snapshot::{directory::SnapShotDirectory, SnapShot, SnapShotData}, Ignores, LocalObjectStore, ObjectID, ObjectStore, BRANCHES_DIRECTORY, CURRENT_BRANCH_FILE};
 use serde::{Deserialize, Serialize};
+use serde_json::{ser::PrettyFormatter, Serializer};
 use std::{
     borrow::Cow,
     collections::BTreeSet,
@@ -33,7 +30,7 @@ impl InitializeConfig {
         }
         create_dir_all(&root)?;
         self.generate_branches()?;
-        
+
         // 创建初始提交
         let mut store = LocalObjectStore::new(self.join("store"))?;
         let directory = SnapShotDirectory::default();
@@ -77,26 +74,29 @@ impl DotYuanShen {
 }
 
 impl DotYuanShen {
-    pub fn root(&self) -> &PathBuf {
+    /// Get the root path of the `.ys` folder
+    pub fn root(&self) -> &Path {
         &self.root
     }
 
+    /// Get the current branch
     pub fn get_branch(&self) -> Result<String, YsError> {
-        Ok(read_to_string(&self.root.join("branch"))?)
+        Ok(read_to_string(&self.root.join(CURRENT_BRANCH_FILE))?)
     }
 
+    /// Set current branch to given name
     pub fn set_branch(&self, new: &str) -> Result<(), YsError> {
-        let mut file = File::options().write(true).truncate(true).open(&self.root.join("branch"))?;
+        let mut file = File::options().write(true).truncate(true).open(&self.root.join(CURRENT_BRANCH_FILE))?;
         file.write(new.as_bytes())?;
         Ok(())
     }
 
     pub fn get_branch_snapshot_id(&self, branch: &str) -> Result<ObjectID, YsError> {
-        read_json(&self.root.join("branches").join(&branch))
+        read_json(&self.root.join(BRANCHES_DIRECTORY).join(&branch))
     }
 
     pub fn set_branch_snapshot_id(&self, branch: &str, object_id: ObjectID) -> Result<(), YsError> {
-        write_json(&object_id, &self.root.join("branches").join(&branch))
+        write_json(&object_id, &self.root.join(BRANCHES_DIRECTORY).join(&branch))
     }
 
     pub fn current_snapshot_id(&self) -> Result<ObjectID, YsError> {
@@ -107,13 +107,14 @@ impl DotYuanShen {
     pub fn create_branch(&self, new_branch: &str) -> Result<(), YsError> {
         if !self.branch_exists(&new_branch)? {
             let snapshot_id = self.current_snapshot_id()?;
-            return write_json(&snapshot_id, &self.root.join("branches").join(&new_branch));
+            return write_json(&snapshot_id, &self.root.join(BRANCHES_DIRECTORY).join(&new_branch));
         }
         Ok(())
     }
 
+    /// Checks whether a branch with a given name exists
     pub fn branch_exists(&self, branch: &str) -> Result<bool, YsError> {
-        Ok(try_exists(self.root.join("branches").join(&branch))?)
+        Ok(try_exists(self.root.join(BRANCHES_DIRECTORY).join(&branch))?)
     }
 
     pub fn store(&self) -> Result<LocalObjectStore, YsError> {
@@ -147,5 +148,7 @@ fn read_json<A: for<'de> Deserialize<'de>>(path: &Path) -> Result<A, YsError> {
 }
 
 fn write_json<A: Serialize>(thing: &A, path: &Path) -> Result<(), YsError> {
-    Ok(serde_json::to_writer_pretty(File::options().write(true).create(true).open(path)?, thing)?)
+    let file = File::options().write(true).create(true).open(path)?;
+    let mut ser = Serializer::with_formatter(file, PrettyFormatter::with_indent(b"    "));
+    Ok(thing.serialize(&mut ser)?)
 }
