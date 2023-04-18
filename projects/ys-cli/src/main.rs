@@ -11,7 +11,7 @@ use clap_builder::{
 use std::{env::current_dir, fmt::Debug, io::stdout};
 use ys_core::{
     initialize::{DotYuanShen, InitializeConfig, InsertJson},
-    Ignores, ObjectID, SnapShot, SnapShotDirectory, YsError,
+    IgnoreRules, ObjectID, SnapShot, SnapShotDirectory, YsError,
 };
 
 mod cmd_checkout;
@@ -260,7 +260,7 @@ pub async fn main() -> Result<(), YsError> {
             let mut store = dot_rev.store().unwrap();
             let branch: String = dot_rev.get_branch().unwrap();
             let old_tip: ObjectID = dot_rev.get_branch_snapshot_id(&branch).unwrap();
-            let ignores: Ignores = dot_rev.ignores().unwrap();
+            let ignores: IgnoreRules = dot_rev.ignores().unwrap();
             let directory = SnapShotDirectory::new(dir.as_path(), &ignores, &mut store).unwrap();
             let snapshot: SnapShot = store.read_json(old_tip).await.unwrap();
             let old_directory: SnapShotDirectory = store.read_json(snapshot.directory).await.unwrap();

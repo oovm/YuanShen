@@ -1,15 +1,4 @@
-use crate::{errors::YsError, snapshot::{directory::SnapShotDirectory, SnapShot, SnapShotData}, Ignores, LocalObjectStore, ObjectID, ObjectStore, BRANCHES_DIRECTORY, CURRENT_BRANCH_FILE};
-use serde::{Deserialize, Serialize};
-use serde_json::{ser::PrettyFormatter, Serializer};
-use std::{
-    borrow::Cow,
-    collections::BTreeSet,
-    fmt::Debug,
-    fs::{create_dir, create_dir_all, read_dir, read_to_string, try_exists, File},
-    future::Future,
-    io::Write,
-    path::{Path, PathBuf},
-};
+use super::*;
 
 /// `.ys` 文件夹
 #[derive(Debug)]
@@ -20,17 +9,19 @@ pub struct DotYuanShen {
 pub struct InitializeConfig {
     pub current: PathBuf,
     pub initial_branch: Cow<'static, str>,
+    pub ignores: IgnoreRules,
 }
 
 impl InitializeConfig {
-    pub async fn new(&self) -> Result<DotYuanShen, YsError> {
-        let root = self.current.join(".ys");
+    ///
+    pub async fn generate(&self) -> Result<DotYuanShen, YsError> {
+        let root = self.current.join(DOT_YUAN_SHEN);
         if read_dir(&root).is_ok() {
             return Ok(DotYuanShen { root });
         }
         create_dir_all(&root)?;
         self.generate_branches()?;
-
+        self.generate_configs()?;
         // 创建初始提交
         let mut store = LocalObjectStore::new(self.join("store"))?;
         let directory = SnapShotDirectory::default();
@@ -41,23 +32,25 @@ impl InitializeConfig {
             data: SnapShotData { kind: 0, message: "Project initialized!".to_string(), authors: Default::default() },
         };
         let snapshot_id = store.insert_json(&snapshot).await?;
-        write_json(&snapshot_id, &root.join("branches").join(self.initial_branch.as_ref()))?;
-        let ignores = Ignores::default();
-        write_json(&ignores, &root.join("ignores"))?;
+        write_json(&snapshot_id, &root.join(BRANCHES_DIRECTORY).join(self.initial_branch.as_ref()))?;
 
         Ok(DotYuanShen { root })
     }
-
     fn generate_branches(&self) -> std::io::Result<()> {
         // Specify the current branch
-        let mut file = File::options().create(true).write(true).open(self.join("branch"))?;
+        let mut file = File::options().create(true).write(true).open(self.join(CURRENT_BRANCH_FILE))?;
         file.write(self.initial_branch.as_bytes())?;
         // Create the default branch
         create_dir(self.join("branches"))
     }
-
+    fn generate_configs(&self) -> std::io::Result<()> {
+        let ignore = self.current.join(".ys.ignore");
+        let mut file = File::options().create(true).write(true).open(ignore)?;
+        file.write(self.ignores.glob.as_bytes())?;
+        Ok(())
+    }
     fn join(&self, path: &str) -> PathBuf {
-        self.current.join(crate::DOT_YUAN_SHEN).join(path)
+        self.current.join(DOT_YUAN_SHEN).join(path)
     }
 }
 impl DotYuanShen {
@@ -121,7 +114,7 @@ impl DotYuanShen {
         Ok(LocalObjectStore::new(self.root.clone())?)
     }
 
-    pub fn ignores(&self) -> Result<Ignores, YsError> {
+    pub fn ignores(&self) -> Result<IgnoreRules, YsError> {
         Ok(read_json(&self.root.join("ignores"))?)
     }
 }

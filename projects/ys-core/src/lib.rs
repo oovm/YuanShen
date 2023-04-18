@@ -12,17 +12,20 @@ mod snapshot;
 const DOT_YUAN_SHEN: &'static str = ".ys";
 const BRANCHES_DIRECTORY: &'static str = "branches";
 const CURRENT_BRANCH_FILE: &'static str = "branch";
+const CONFIG_BRANCH_FILE: &'static str = ".config";
+const IGNORE_FILE: &'static str = ".ys.ignore";
 
 pub use crate::{
     errors::{Result, YsError, YsErrorKind},
     objects::{
         author_id::AuthorID,
+        ignore_rules::IgnoreRules,
         object_id::ObjectID,
         object_store::{file_system::LocalObjectStore, in_memory::MemoryObjectStore, ObjectStore},
     },
     snapshot::{
         differences,
-        directory::{DirectoryEntry, Ignores, SnapShotDirectory},
+        directory::{DirectoryEntry, SnapShotDirectory},
         initialize, SnapShot, SnapShotData,
     },
 };

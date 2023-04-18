@@ -4,7 +4,7 @@ use std::{
 };
 use ys_core::{
     differences::{DifferenceEntry, SnapShotDifference},
-    DirectoryEntry, Ignores, LocalObjectStore, MemoryObjectStore, ObjectID, ObjectStore, SnapShotDirectory,
+    DirectoryEntry, IgnoreRules, LocalObjectStore, MemoryObjectStore, ObjectID, ObjectStore, SnapShotDirectory,
 };
 
 #[test]
@@ -80,7 +80,7 @@ async fn test_directory() {
     let mut store = MemoryObjectStore::new();
     let codebase = SnapShotDirectory::new(
         dir.as_path(),
-        &Ignores { set: vec![String::from(".git"), String::from(".ys"), String::from("target")].into_iter().collect() },
+        &IgnoreRules { glob: vec![String::from(".git"), String::from(".ys"), String::from("target")].into_iter().collect() },
         &mut store,
     )
     .unwrap();

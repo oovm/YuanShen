@@ -21,7 +21,7 @@ impl YuanShenInitialize {
                 None => Cow::Borrowed("master"),
             },
         };
-        config.new().await?;
+        config.generate().await?;
         Ok(())
     }
 }
