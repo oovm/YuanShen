@@ -1,7 +1,7 @@
 use clap::Args;
 use std::env::current_dir;
 use ys_core::{IgnoreRules, ObjectID, SnapShot, SnapShotData, SnapShotDirectory, YsError};
-use ys_core::initialize::{DotYuanShen, InsertJson};
+use ys_core::initialize::{DotYuanShenClient, InsertJson, YuanShenClient};
 
 #[derive(Debug, Args)]
 pub struct YuanShenCommit {
@@ -16,8 +16,7 @@ pub struct YuanShenCommit {
 impl YuanShenCommit {
     pub async fn commit(self) -> Result<(), YsError> {
         let dir = current_dir()?;
-        let rev_dir = dir.join(".ys");
-        let dot_rev = DotYuanShen::open(rev_dir).unwrap();
+        let dot_rev = DotYuanShenClient::open(&dir).unwrap();
         let mut store = dot_rev.store().unwrap();
         let branch: String = dot_rev.get_branch().unwrap();
         let old_tip: ObjectID = dot_rev.get_branch_snapshot_id(&branch).unwrap();

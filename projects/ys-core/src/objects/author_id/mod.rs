@@ -25,19 +25,25 @@ impl Ord for AuthorID {
 
 impl Serialize for AuthorID {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
-        todo!()
+        self.hash256.as_bytes().serialize(serializer)
     }
 }
 
 impl<'de> Deserialize<'de> for AuthorID {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
-        todo!()
+        match String::deserialize(deserializer) {
+            Ok(_) => {
+                todo!()
+            }
+            Err(_) => {
+                todo!()
+            }
+        }
     }
 }
-

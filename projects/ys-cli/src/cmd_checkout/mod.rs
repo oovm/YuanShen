@@ -1,7 +1,10 @@
 use clap::Args;
 use std::env::current_dir;
-use ys_core::{YsError};
-use ys_core::initialize::{DotYuanShen, InitializeConfig};
+use ys_core::{
+    initialize::{DotYuanShenClient, InitializeConfig},
+    YsError,
+};
+use ys_core::initialize::YuanShenClient;
 
 #[derive(Debug, Args)]
 pub struct YuanShenCheckout {
@@ -11,10 +14,9 @@ pub struct YuanShenCheckout {
 
 impl YuanShenCheckout {
     pub async fn checkout(self) -> Result<(), YsError> {
-        let dot_rev = DotYuanShen::open(current_dir().unwrap().join(".ys")).unwrap();
-        if !dot_rev.branch_exists(&self.branch).unwrap() {
-            dot_rev.create_branch(&self.branch).unwrap();
-        }
-        dot_rev.set_branch(&self.branch)
+        let here = current_dir()?;
+        let dot_rev = DotYuanShenClient::open(&here)?;
+        dot_rev.set_branch(&self.branch)?;
+        Ok(())
     }
 }

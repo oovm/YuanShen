@@ -1,14 +1,13 @@
 use std::{
-    borrow::Cow,
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, },
     fs::{read_dir, File},
     io::{Read, Write},
     path::{Path, PathBuf},
 };
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize,  Serialize, };
 
-use crate::{ObjectID, ObjectStore};
+use crate::{IgnoreRules, ObjectID, ObjectStore};
 
 /// A directory tree, with [`ObjectID`]s at the leaves.
 #[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize, Default)]

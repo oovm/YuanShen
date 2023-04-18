@@ -1,9 +1,6 @@
 use clap::Args;
 use std::{borrow::Cow, env::current_dir};
-use ys_core::{
-    initialize::{DotYuanShen, InitializeConfig},
-    YsError,
-};
+use ys_core::{initialize::InitializeConfig, IgnoreRules, YsError};
 
 #[derive(Debug, Args)]
 pub struct YuanShenInitialize {
@@ -20,6 +17,7 @@ impl YuanShenInitialize {
                 Some(s) => Cow::Owned(s),
                 None => Cow::Borrowed("master"),
             },
+            ignores: IgnoreRules::default(),
         };
         config.generate().await?;
         Ok(())

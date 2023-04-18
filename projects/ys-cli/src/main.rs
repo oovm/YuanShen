@@ -10,9 +10,10 @@ use clap_builder::{
 };
 use std::{env::current_dir, fmt::Debug, io::stdout};
 use ys_core::{
-    initialize::{DotYuanShen, InitializeConfig, InsertJson},
+    initialize::{DotYuanShenClient, InitializeConfig, InsertJson},
     IgnoreRules, ObjectID, SnapShot, SnapShotDirectory, YsError,
 };
+use ys_core::initialize::YuanShenClient;
 
 mod cmd_checkout;
 mod cmd_commit;
@@ -248,15 +249,15 @@ pub async fn main() -> Result<(), YsError> {
         Initialize(init) => init.initialize().await?,
         Difference(diff) => diff.difference().await?,
         Branch => {
-            let dot_rev = DotYuanShen::open(current_dir().unwrap().join(".ys")).unwrap();
-            let branch = dot_rev.get_branch().unwrap();
+            let here = current_dir()?;
+            let dot_rev = DotYuanShenClient::open(&here)?;
+            let branch = dot_rev.get_branch()?;
             println!("{}", branch);
         }
         Checkout(c) => c.checkout().await?,
         Changes => {
-            let dir = current_dir().unwrap();
-            let rev_dir = dir.join(".ys");
-            let dot_rev = DotYuanShen::open(rev_dir).unwrap();
+            let dir = current_dir()?;
+            let dot_rev = DotYuanShenClient::open(&dir).unwrap();
             let mut store = dot_rev.store().unwrap();
             let branch: String = dot_rev.get_branch().unwrap();
             let old_tip: ObjectID = dot_rev.get_branch_snapshot_id(&branch).unwrap();

@@ -56,6 +56,9 @@ pub enum YsErrorKind {
         /// 缺失对象的 ID。
         id: ObjectID,
     },
+    InvalidObject {
+        message: String,
+    },
 }
 
 impl Display for YsErrorKind {
@@ -69,6 +72,9 @@ impl Display for YsErrorKind {
             }
             Self::MissingObject { id } => {
                 write!(f, "找不到对象: {}", id)
+            }
+            Self::InvalidObject { .. } => {
+                todo!()
             }
         }
     }
