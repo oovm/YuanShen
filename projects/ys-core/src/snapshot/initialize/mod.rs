@@ -36,7 +36,7 @@ impl InitializeConfig {
             data: SnapShotData { kind: 0, message: "Project initialized!".to_string(), authors: Default::default() },
         };
         let snapshot_id = store.insert_json(&snapshot).await?;
-        write_json(&snapshot_id, &root.join(BRANCHES_DIRECTORY).join(self.initial_branch.as_ref()))?;
+        write_json(&snapshot_id, &root.join("branches").join(self.initial_branch.as_ref()))?;
 
         Ok(DotYuanShenClient { dot_root: root, dot_config: config })
     }
@@ -72,12 +72,12 @@ impl DotYuanShenClient {
             Err(YsError::path_error(std::io::Error::new(std::io::ErrorKind::NotFound, "Folder `.ys` does not exist"), path))?
         }
         let dot_config = path.join(".config").join("yuan-shen");
-        if !dot_config.exists() {
-            Err(YsError::path_error(
-                std::io::Error::new(std::io::ErrorKind::NotFound, "Folder `.config/yuan-shen` does not exist"),
-                path,
-            ))?
-        }
+        // if !dot_config.exists() {
+        //     Err(YsError::path_error(
+        //         std::io::Error::new(std::io::ErrorKind::NotFound, "Folder `.config/yuan-shen` does not exist"),
+        //         path,
+        //     ))?
+        // }
         Ok(Self { dot_root, dot_config })
     }
 }
@@ -104,7 +104,7 @@ impl YuanShenClient for DotYuanShenClient {
     }
 
     fn create_branch(&self, name: &str) -> Result<ObjectID, YsError> {
-        let path = self.dot_root.join(BRANCHES_DIRECTORY).join(name);
+        let path = self.dot_root.join("branches").join(name);
         if path.exists() {
             match read_to_string(&path) {
                 Ok(o) => ObjectID::from_str(&o),
@@ -123,17 +123,12 @@ impl YuanShenClient for DotYuanShenClient {
 }
 
 impl DotYuanShenClient {
-    /// Get the root path of the `.ys` folder
-    pub fn root(&self) -> &Path {
-        &self.dot_root
-    }
-
     pub fn get_branch_snapshot_id(&self, branch: &str) -> Result<ObjectID, YsError> {
-        read_json(&self.dot_root.join(BRANCHES_DIRECTORY).join(&branch))
+        read_json(&self.dot_root.join("branches").join(&branch))
     }
 
     pub fn set_branch_snapshot_id(&self, branch: &str, object_id: ObjectID) -> Result<(), YsError> {
-        write_json(&object_id, &self.dot_root.join(BRANCHES_DIRECTORY).join(&branch))
+        write_json(&object_id, &self.dot_root.join("branches").join(&branch))
     }
 
     pub fn current_snapshot_id(&self) -> Result<ObjectID, YsError> {
@@ -143,7 +138,7 @@ impl DotYuanShenClient {
 
     /// Checks whether a branch with a given name exists
     pub fn branch_exists(&self, branch: &str) -> Result<bool, YsError> {
-        Ok(try_exists(self.dot_root.join(BRANCHES_DIRECTORY).join(&branch))?)
+        Ok(try_exists(self.dot_root.join("branches").join(&branch))?)
     }
 
     pub fn store(&self) -> Result<LocalObjectStore, YsError> {

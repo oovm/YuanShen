@@ -1,6 +1,7 @@
 #![feature(fs_try_exists)]
 
 pub use crate::{
+    cmd_branch::YuanShenBranch,
     cmd_checkout::YuanShenCheckout, cmd_commit::YuanShenCommit, cmd_diff::YuanShenDifference, cmd_init::YuanShenInitialize,
 };
 use clap::{ArgMatches, Args, FromArgMatches, Parser, Subcommand};
@@ -13,12 +14,14 @@ use ys_core::{
     initialize::{DotYuanShenClient, InitializeConfig, InsertJson},
     IgnoreRules, ObjectID, SnapShot, SnapShotDirectory, YsError,
 };
+
 use ys_core::initialize::YuanShenClient;
 
 mod cmd_checkout;
 mod cmd_commit;
 mod cmd_diff;
 mod cmd_init;
+mod cmd_branch;
 
 #[derive(Parser, Debug)]
 struct YuanShen {
@@ -48,11 +51,10 @@ enum YsCommand {
     Orphan(YuanShenOrphan),
     /// 切换到指定名称的世界线
     Checkout(YuanShenCheckout),
-    Branch,
+    Branch(YuanShenBranch),
     Stash(YuanShenCommit),
     /// 对象有点太城市化了
     GarbageCollect,
-
     External(Vec<String>),
 }
 #[derive(Debug, Args)]
@@ -69,24 +71,24 @@ impl FromArgMatches for YsCommand {
     }
     fn from_arg_matches_mut(args: &mut ArgMatches) -> Result<Self, clap::Error> {
         match args.remove_subcommand() {
-            Some((cmd, ref mut sub_arg)) => {
+            Some((cmd, ref mut sub_args)) => {
                 let ys_cmd = match cmd.as_str() {
-                    "initialize" | "启动!" | "启动" => Self::Initialize(FromArgMatches::from_arg_matches_mut(sub_arg)?),
-                    "difference" | "观测" => Self::Difference(FromArgMatches::from_arg_matches_mut(sub_arg)?),
-                    "orphan" | "退相干" => Self::Orphan(FromArgMatches::from_arg_matches_mut(sub_arg)?),
-                    "squash" | "塌缩" => Self::Squash(FromArgMatches::from_arg_matches_mut(sub_arg)?),
-                    "merge" | "收束" => Self::Merge(FromArgMatches::from_arg_matches_mut(sub_arg)?),
-                    "rebase" | "干涉" => Self::Rebase(FromArgMatches::from_arg_matches_mut(sub_arg)?),
-                    "reverse" | "回溯" => Self::Reverse(FromArgMatches::from_arg_matches_mut(sub_arg)?),
-                    "checkout" | "跃迁" => Self::Checkout(FromArgMatches::from_arg_matches_mut(sub_arg)?),
-                    "branch" => Self::Branch,
-                    "stash" => Self::Stash(FromArgMatches::from_arg_matches_mut(sub_arg)?),
-                    "commit" => Self::Commit(FromArgMatches::from_arg_matches_mut(sub_arg)?),
+                    "initialize" | "启动!" | "启动" => Self::Initialize(FromArgMatches::from_arg_matches_mut(sub_args)?),
+                    "difference" | "观测" => Self::Difference(FromArgMatches::from_arg_matches_mut(sub_args)?),
+                    "orphan" | "退相干" => Self::Orphan(FromArgMatches::from_arg_matches_mut(sub_args)?),
+                    "squash" | "塌缩" => Self::Squash(FromArgMatches::from_arg_matches_mut(sub_args)?),
+                    "merge" | "收束" => Self::Merge(FromArgMatches::from_arg_matches_mut(sub_args)?),
+                    "rebase" | "干涉" => Self::Rebase(FromArgMatches::from_arg_matches_mut(sub_args)?),
+                    "reverse" | "回溯" => Self::Reverse(FromArgMatches::from_arg_matches_mut(sub_args)?),
+                    "checkout" | "跃迁" => Self::Checkout(FromArgMatches::from_arg_matches_mut(sub_args)?),
+                    "branch" => Self::Branch(FromArgMatches::from_arg_matches_mut(sub_args)?),
+                    "stash" => Self::Stash(FromArgMatches::from_arg_matches_mut(sub_args)?),
+                    "commit" => Self::Commit(FromArgMatches::from_arg_matches_mut(sub_args)?),
                     "changes" => Self::Changes,
                     "garbage-collect" => Self::GarbageCollect,
                     _ => Self::External(
                         std::iter::once(String::from(cmd))
-                            .chain(sub_arg.remove_many::<String>("").unwrap().map(String::from))
+                            .chain(sub_args.remove_many::<String>("").unwrap().map(String::from))
                             .collect::<Vec<_>>(),
                     ),
                 };
@@ -154,10 +156,10 @@ impl FromArgMatches for YsCommand {
                     let __clap_arg_matches = &mut __clap_arg_sub_matches;
                     FromArgMatches::update_from_arg_matches_mut(__clap_arg, __clap_arg_matches)?
                 }
-                Self::Branch if "branch" == clap => {
+                Self::Branch(ref mut __clap_arg) if "branch" == clap => {
                     let (_, mut __clap_arg_sub_matches) = args.remove_subcommand().unwrap();
                     let __clap_arg_matches = &mut __clap_arg_sub_matches;
-                    {}
+                    FromArgMatches::update_from_arg_matches_mut(__clap_arg, __clap_arg_matches)?
                 }
                 Self::Stash(ref mut __clap_arg) if "stash" == clap => {
                     let (_, mut __clap_arg_sub_matches) = args.remove_subcommand().unwrap();
@@ -248,11 +250,10 @@ pub async fn main() -> Result<(), YsError> {
     match args.cmd {
         Initialize(init) => init.initialize().await?,
         Difference(diff) => diff.difference().await?,
-        Branch => {
-            let here = current_dir()?;
-            let dot_rev = DotYuanShenClient::open(&here)?;
-            let branch = dot_rev.get_branch()?;
-            println!("{}", branch);
+        Branch(b) => {
+            b.branch().await?
+            
+
         }
         Checkout(c) => c.checkout().await?,
         Changes => {

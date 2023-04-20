@@ -10,14 +10,12 @@ mod objects;
 mod snapshot;
 
 const DOT_YUAN_SHEN: &'static str = ".ys";
-const BRANCHES_DIRECTORY: &'static str = "branches";
 const CURRENT_BRANCH_FILE: &'static str = "branch";
-const CONFIG_BRANCH_FILE: &'static str = ".config";
-const IGNORE_FILE: &'static str = ".ys.ignore";
 
 pub use crate::{
     errors::{Result, YsError, YsErrorKind},
     objects::{
+        tree_id::TreeID,
         author_id::AuthorID,
         ignore_rules::IgnoreRules,
         object_id::ObjectID,

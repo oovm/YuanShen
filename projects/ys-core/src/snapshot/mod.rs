@@ -1,7 +1,7 @@
 use crate::{
     errors::YsError,
     snapshot::{directory::SnapShotDirectory},
-    AuthorID, DirectoryEntry, IgnoreRules, LocalObjectStore, ObjectID, ObjectStore, BRANCHES_DIRECTORY,
+    AuthorID, DirectoryEntry, IgnoreRules, LocalObjectStore, ObjectID, ObjectStore,
     CURRENT_BRANCH_FILE, DOT_YUAN_SHEN,
 };
 use serde::{Deserialize, Serialize};
