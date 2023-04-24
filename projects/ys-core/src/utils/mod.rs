@@ -1,8 +1,13 @@
-use crate::YsError;
+use crate::{YsError, YsErrorKind};
 use blake3::Hash;
 use serde::{Deserialize, Serialize};
 use serde_json::{ser::PrettyFormatter, Serializer};
-use std::{fmt::Formatter, fs::File, path::Path};
+use std::{
+    fmt::Formatter,
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 pub trait WriteHashID {
     fn write_hash_id(&self, f: &mut Formatter<'_>) -> std::fmt::Result;
@@ -33,8 +38,8 @@ where
     Ok(thing.serialize(&mut ser)?)
 }
 pub fn vec_json<A>(thing: &A) -> Result<Vec<u8>, YsError>
-    where
-        A: Serialize,
+where
+    A: Serialize,
 {
     let mut buffer = vec![];
     let mut ser = Serializer::with_formatter(&mut buffer, PrettyFormatter::with_indent(b"    "));
@@ -48,4 +53,14 @@ where
 {
     let buffer = vec_json(thing)?;
     Ok(blake3::hash(&buffer))
+}
+
+pub fn truncate_write(path: PathBuf, bytes: &[u8]) -> Result<usize, YsError> {
+    let open = File::options().write(true).truncate(true).open(&path);
+    match open.and_then(|mut o| o.write(bytes)) {
+        Ok(o) => Ok(o),
+        Err(e) => {
+            return Err(YsErrorKind::IO { error: e, path: Some(path.to_path_buf()) })?;
+        }
+    }
 }

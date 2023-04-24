@@ -12,11 +12,11 @@ exclude = ["package.json", "tests/**"]
 
 [[bin]]
 name = "ys"
-path = "src/main.rs"
+path = "app/main.rs"
 
 [[bin]]
 name = "源神"
-path = "src/main.rs"
+path = "app/zh_hans.rs"
 
 [dependencies]
 clap = { version = "4.2.5", features = ["derive"] }

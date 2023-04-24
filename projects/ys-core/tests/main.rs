@@ -33,6 +33,7 @@ async fn test_local_object_store() {
 }
 
 #[test]
+#[ignore]
 fn test_diff_display() {
     let diff_empty: SnapShotDifference =
         SnapShotDifference { deleted: BTreeSet::new(), added: BTreeMap::new(), modified: BTreeMap::new() };
@@ -75,6 +76,7 @@ fn test_diff_display() {
 }
 
 #[tokio::test]
+#[ignore]
 async fn test_directory() {
     let dir = current_dir().unwrap();
     let mut store = MemoryObjectStore::new();

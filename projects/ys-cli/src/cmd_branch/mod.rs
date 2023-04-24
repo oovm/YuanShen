@@ -1,13 +1,18 @@
 use clap::Args;
 use std::env::current_dir;
 use ys_core::{
-    initialize::{DotYuanShenClient,  YuanShenClient},
-    YsError,
+    initialize::{DotYuanShenClient, YuanShenClient},
+    ObjectID, YsError,
 };
 
 #[derive(Debug, Args)]
 pub struct YuanShenBranch {
-
+    #[arg(long)]
+    contains: Option<String>,
+    #[arg(long)]
+    without: Option<String>,
+    #[arg(long, short)]
+    ignore_case: bool,
 }
 
 impl YuanShenBranch {

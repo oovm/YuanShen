@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
-    utils::{read_json, write_json},
-     YsErrorKind,
+    utils::{read_json, truncate_write, write_json},
+    YsErrorKind,
 };
 
 /// `.ys` 文件夹
@@ -45,7 +45,7 @@ impl InitializeConfig {
     }
     fn generate_branches(&self) -> std::io::Result<()> {
         // Specify the current branch
-        let mut file = File::options().create(true).write(true).open(self.join(CURRENT_BRANCH_FILE))?;
+        let mut file = File::options().create(true).write(true).open(self.join("branch"))?;
         file.write(self.initial_branch.as_bytes())?;
         // Create the default branch
         create_dir(self.join("branches"))
@@ -97,7 +97,7 @@ pub trait YuanShenClient {
     /// Get the current branch
     fn get_branch_name(&self) -> Result<String, YsError>;
     /// Set current branch to given name
-    fn set_branch(&self, new: &str) -> Result<ObjectID, YsError>;
+    fn set_branch(&self, new: &str) -> Result<(), YsError>;
 
     /// Create a branch and set it's head to the current snapshot
     fn create_branch(&self, name: &str) -> Result<ObjectID, YsError>;
@@ -112,12 +112,12 @@ impl YuanShenClient for DotYuanShenClient {
         self.get_branch_id(&branch)
     }
     fn get_branch_name(&self) -> Result<String, YsError> {
-        Ok(read_to_string(&self.dot_root.join(CURRENT_BRANCH_FILE))?)
+        Ok(read_to_string(&self.dot_root.join("branch"))?)
     }
-    fn set_branch(&self, new: &str) -> Result<ObjectID, YsError> {
-        let mut file = File::options().write(true).truncate(true).open(&self.dot_root.join(CURRENT_BRANCH_FILE))?;
-        file.write(new.as_bytes())?;
-        self.create_branch(new)
+    fn set_branch(&self, new: &str) -> Result<(), YsError> {
+        let branch_path = self.dot_root.join("branch");
+        truncate_write(branch_path, new.as_bytes())?;
+        Ok(())
     }
 
     fn create_branch(&self, name: &str) -> Result<ObjectID, YsError> {
@@ -127,11 +127,8 @@ impl YuanShenClient for DotYuanShenClient {
         }
         else {
             let snapshot_id = self.calculate_branch_id()?;
-            let mut file = File::options().write(true).create(true).open(&path)?;
-            match file.write_all(snapshot_id.to_string().as_bytes()) {
-                Ok(_) => Ok(snapshot_id),
-                Err(e) => Err(YsErrorKind::IO { error: e, path: Some(path) })?,
-            }
+            truncate_write(path, snapshot_id.to_string().as_bytes())?;
+            Ok(snapshot_id)
         }
     }
 }

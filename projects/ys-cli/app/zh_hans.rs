@@ -1,24 +1,14 @@
-#![feature(fs_try_exists)]
-
-pub use crate::{
-    cmd_branch::YuanShenBranch,
-    cmd_checkout::YuanShenCheckout, cmd_commit::YuanShenCommit, cmd_diff::YuanShenDifference, cmd_init::YuanShenInitialize,
-};
 use clap::{ArgMatches, Args, FromArgMatches, Parser, Subcommand};
 use clap_builder::{
     builder::{_AutoValueParser, via_prelude::_ValueParserViaParse},
     Command,
 };
 use std::{env::current_dir, fmt::Debug, io::stdout};
-use ys_core::{initialize::{DotYuanShenClient, }, IgnoreRules, ObjectID, SnapShot, SnapShotDirectory, YsError, ObjectStore};
-
-use ys_core::initialize::YuanShenClient;
-
-mod cmd_checkout;
-mod cmd_commit;
-mod cmd_diff;
-mod cmd_init;
-mod cmd_branch;
+use ys_core::{
+    initialize::{DotYuanShenClient, YuanShenClient},
+    IgnoreRules, ObjectID, ObjectStore, SnapShot, SnapShotDirectory, YsError,
+};
+use yuan_shen::*;
 
 #[derive(Parser, Debug)]
 struct YuanShen {
@@ -39,7 +29,7 @@ enum YsCommand {
     /// 将观测结果合并到当前世界线
     Squash(YuanShenSquash),
     /// 设定世界线收束节点
-    Merge(YuanShenCommit),
+    Merge(YuanShenMerge),
     /// 干涉目标世界线
     Rebase(YuanShenRebase),
     /// 回溯到任意固化节点
@@ -54,12 +44,6 @@ enum YsCommand {
     GarbageCollect,
     External(Vec<String>),
 }
-#[derive(Debug, Args)]
-pub struct YuanShenSquash {}
-#[derive(Debug, Args)]
-pub struct YuanShenOrphan {}
-#[derive(Debug, Args)]
-pub struct YuanShenRebase {}
 
 #[automatically_derived]
 impl FromArgMatches for YsCommand {
@@ -203,7 +187,7 @@ impl Subcommand for YsCommand {
                 .alias("squash")
         })
         .subcommand({
-            YuanShenCommit::augment_args(Command::new("收束")).about("设定世界线收束节点").long_about(None).alias("merge")
+            YuanShenMerge::augment_args(Command::new("收束")).about("设定世界线收束节点").long_about(None).alias("merge")
         })
         .subcommand({
             YuanShenCommit::augment_args(Command::new("干涉")).about("干涉目标世界线").long_about(None).alias("rebase")
@@ -226,7 +210,7 @@ impl Subcommand for YsCommand {
         .subcommand(Command::new("branch"))
         .subcommand(YuanShenCommit::augment_args(Command::new("stash")))
         .subcommand({
-            Command::new("逆城市化").about("这些对象有点太城市化了").long_about(None).alias("gc").alias("garbage-collect")
+            Command::new("逆化").about("这些对象有点太城市化了").long_about(None).alias("gc").alias("garbage-collect")
         })
         .external_subcommand_value_parser(_AutoValueParser::<String>::new().value_parser())
     }
@@ -247,11 +231,7 @@ pub async fn main() -> Result<(), YsError> {
     match args.cmd {
         Initialize(init) => init.initialize().await?,
         Difference(diff) => diff.difference().await?,
-        Branch(b) => {
-            b.branch().await?
-            
-
-        }
+        Branch(b) => b.branch().await?,
         Checkout(c) => c.checkout().await?,
         Changes => {
             let dir = current_dir()?;
