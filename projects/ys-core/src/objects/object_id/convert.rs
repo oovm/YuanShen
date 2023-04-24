@@ -57,9 +57,9 @@ impl<'de> Deserialize<'de> for ObjectID {
         D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        match ObjectID::from_str(&s) {
-            Ok(core) => Ok(core),
-            Err(e) => Err(serde::de::Error::custom(e.to_string())),
+        match Hash::from_hex(&s) {
+            Ok(o) => Ok(Self { hash256: o }),
+            Err(e) => Err(serde::de::Error::custom(e)),
         }
     }
 }

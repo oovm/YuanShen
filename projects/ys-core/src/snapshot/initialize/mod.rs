@@ -1,6 +1,10 @@
 use super::*;
-use crate::YsErrorKind;
+use crate::{
+    utils::{read_json, write_json},
+    TreeID, YsErrorKind,
+};
 use std::str::FromStr;
+
 /// `.ys` 文件夹
 #[derive(Debug)]
 pub struct DotYuanShenClient {
@@ -29,13 +33,13 @@ impl InitializeConfig {
         // 创建初始提交
         let mut store = LocalObjectStore::new(self.join("store"))?;
         let directory = SnapShotDirectory::default();
-        let directory = store.insert_json(&directory).await?;
+        let directory = store.set_typed(&directory).await?;
         let snapshot = SnapShot {
             directory,
             previous: BTreeSet::new(),
             data: SnapShotData { kind: 0, message: "Project initialized!".to_string(), authors: Default::default() },
         };
-        let snapshot_id = store.insert_json(&snapshot).await?;
+        let snapshot_id = store.set_typed(&snapshot).await?;
         write_json(&snapshot_id, &root.join("branches").join(self.initial_branch.as_ref()))?;
 
         Ok(DotYuanShenClient { dot_root: root, dot_config: config })
@@ -84,8 +88,15 @@ impl DotYuanShenClient {
 
 /// Describe the capabilities of the YuanShen client
 pub trait YuanShenClient {
+    fn get_branch_id(&self, branch: &str) -> Result<ObjectID, YsError>;
+
+    fn calculate_branch_id(&self) -> Result<ObjectID, YsError> {
+        let branch = self.get_branch_name()?;
+        self.get_branch_id(&branch)
+    }
+
     /// Get the current branch
-    fn get_branch(&self) -> Result<String, YsError>;
+    fn get_branch_name(&self) -> Result<String, YsError>;
     /// Set current branch to given name
     fn set_branch(&self, new: &str) -> Result<ObjectID, YsError>;
 
@@ -94,7 +105,14 @@ pub trait YuanShenClient {
 }
 
 impl YuanShenClient for DotYuanShenClient {
-    fn get_branch(&self) -> Result<String, YsError> {
+    fn get_branch_id(&self, branch: &str) -> Result<ObjectID, YsError> {
+        ObjectID::read_branch(&self.dot_root, branch)
+    }
+    fn calculate_branch_id(&self) -> Result<ObjectID, YsError> {
+        let branch = self.get_branch_name()?;
+        self.get_branch_id(&branch)
+    }
+    fn get_branch_name(&self) -> Result<String, YsError> {
         Ok(read_to_string(&self.dot_root.join(CURRENT_BRANCH_FILE))?)
     }
     fn set_branch(&self, new: &str) -> Result<ObjectID, YsError> {
@@ -106,13 +124,10 @@ impl YuanShenClient for DotYuanShenClient {
     fn create_branch(&self, name: &str) -> Result<ObjectID, YsError> {
         let path = self.dot_root.join("branches").join(name);
         if path.exists() {
-            match read_to_string(&path) {
-                Ok(o) => ObjectID::from_str(&o),
-                Err(e) => Err(YsErrorKind::IO { error: e, path: Some(path) })?,
-            }
+            ObjectID::read_branch(&self.dot_root, name)
         }
         else {
-            let snapshot_id = self.current_snapshot_id()?;
+            let snapshot_id = self.calculate_branch_id()?;
             let mut file = File::options().write(true).create(true).open(&path)?;
             match file.write_all(snapshot_id.to_string().as_bytes()) {
                 Ok(_) => Ok(snapshot_id),
@@ -123,17 +138,8 @@ impl YuanShenClient for DotYuanShenClient {
 }
 
 impl DotYuanShenClient {
-    pub fn get_branch_snapshot_id(&self, branch: &str) -> Result<ObjectID, YsError> {
-        read_json(&self.dot_root.join("branches").join(&branch))
-    }
-
     pub fn set_branch_snapshot_id(&self, branch: &str, object_id: ObjectID) -> Result<(), YsError> {
         write_json(&object_id, &self.dot_root.join("branches").join(&branch))
-    }
-
-    pub fn current_snapshot_id(&self) -> Result<ObjectID, YsError> {
-        let branch = self.get_branch()?;
-        self.get_branch_snapshot_id(&branch)
     }
 
     /// Checks whether a branch with a given name exists
@@ -148,31 +154,4 @@ impl DotYuanShenClient {
     pub fn ignores(&self) -> Result<IgnoreRules, YsError> {
         Ok(read_json(&self.dot_root.join("ignores"))?)
     }
-}
-
-pub trait InsertJson {
-    fn insert_json<A: Serialize + Send + Sync>(&mut self, thing: &A) -> impl Future<Output = Result<ObjectID, YsError>> + Send;
-
-    fn read_json<A: for<'de> Deserialize<'de>>(&mut self, id: ObjectID) -> impl Future<Output = Result<A, YsError>> + Send;
-}
-
-impl InsertJson for LocalObjectStore {
-    async fn insert_json<A: Serialize + Send + Sync>(&mut self, thing: &A) -> Result<ObjectID, YsError> {
-        Ok(self.insert(&serde_json::to_vec_pretty(thing)?).await?)
-    }
-
-    async fn read_json<A: for<'de> Deserialize<'de>>(&mut self, object_id: ObjectID) -> Result<A, YsError> {
-        let object = self.read(object_id).await?;
-        Ok(serde_json::from_slice(&object)?)
-    }
-}
-
-fn read_json<A: for<'de> Deserialize<'de>>(path: &Path) -> Result<A, YsError> {
-    Ok(serde_json::from_reader(File::options().read(true).open(path)?)?)
-}
-
-fn write_json<A: Serialize>(thing: &A, path: &Path) -> Result<(), YsError> {
-    let file = File::options().write(true).create(true).open(path)?;
-    let mut ser = Serializer::with_formatter(file, PrettyFormatter::with_indent(b"    "));
-    Ok(thing.serialize(&mut ser)?)
 }

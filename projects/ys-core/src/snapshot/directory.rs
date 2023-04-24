@@ -1,13 +1,18 @@
+use blake3::Hash;
 use std::{
-    collections::{BTreeMap, },
+    collections::BTreeMap,
     fs::{read_dir, File},
     io::{Read, Write},
     path::{Path, PathBuf},
 };
 
-use serde::{Deserialize,  Serialize, };
+use serde::{Deserialize, Serialize};
 
-use crate::{IgnoreRules, ObjectID, ObjectStore};
+use crate::{
+    utils::{hash_json, write_json},
+    IgnoreRules, ObjectID, ObjectStore, TreeID, YsError,
+};
+use crate::utils::vec_json;
 
 /// A directory tree, with [`ObjectID`]s at the leaves.
 #[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize, Default)]
@@ -32,7 +37,7 @@ impl SnapShotDirectory {
             for (file_name, entry) in self.root.iter() {
                 match entry {
                     DirectoryEntry::File(id) => {
-                        let v = store.read(*id).await.map_err(Error::Store)?;
+                        let v = store.get_raw(*id).await.map_err(Error::Store)?;
                         let mut f = File::options().create(true).write(true).open(path.join(file_name)).map_err(Error::IO)?;
                         f.write(&v).map_err(Error::IO)?;
                     }
@@ -45,8 +50,6 @@ impl SnapShotDirectory {
         Ok(())
     }
 }
-
-
 
 #[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize)]
 pub enum DirectoryEntry {

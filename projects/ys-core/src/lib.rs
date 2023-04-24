@@ -8,7 +8,7 @@
 mod errors;
 mod objects;
 mod snapshot;
-mod traits;
+pub(crate) mod utils;
 
 const DOT_YUAN_SHEN: &'static str = ".ys";
 const CURRENT_BRANCH_FILE: &'static str = "branch";

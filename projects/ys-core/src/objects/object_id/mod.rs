@@ -1,8 +1,12 @@
 use super::*;
+use crate::{
 
+    utils::{read_json, write_json, WriteHashID},
+};
+
+mod convert;
 #[cfg(test)]
 mod tests;
-mod convert;
 
 /// 256 位对象 ID
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -10,7 +14,24 @@ pub struct ObjectID {
     hash256: Hash,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct BranchJson {
+    tree_id: String,
+}
 
+impl ObjectID {
+    pub fn read_branch(dot_ys: &Path, name: &str) -> Result<Self, YsError> {
+        let file = dot_ys.join("branches").join(name);
+        let json = read_json::<BranchJson>(&file)?;
+        Ok(Self { hash256: Hash::from_hex(&json.tree_id)? })
+    }
+    pub fn write_branch(&self, dot_ys: &Path, name: &str) -> Result<(), YsError> {
+        let file = dot_ys.join("branches").join(name);
+        let json = BranchJson { tree_id: self.hash256.to_string() };
+        write_json(&json, &file)
+    }
+}
 
 impl Ord for ObjectID {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
@@ -26,10 +47,7 @@ impl PartialOrd for ObjectID {
 
 impl Display for ObjectID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for byte in self.hash256.as_bytes() {
-            write!(f, "{:02x}", byte)?;
-        }
-        Ok(())
+        self.hash256.write_hash_id(f)
     }
 }
 
@@ -38,4 +56,3 @@ impl Debug for ObjectID {
         Display::fmt(self, f)
     }
 }
-

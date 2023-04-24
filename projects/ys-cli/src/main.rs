@@ -10,10 +10,7 @@ use clap_builder::{
     Command,
 };
 use std::{env::current_dir, fmt::Debug, io::stdout};
-use ys_core::{
-    initialize::{DotYuanShenClient, InitializeConfig, InsertJson},
-    IgnoreRules, ObjectID, SnapShot, SnapShotDirectory, YsError,
-};
+use ys_core::{initialize::{DotYuanShenClient, }, IgnoreRules, ObjectID, SnapShot, SnapShotDirectory, YsError, ObjectStore};
 
 use ys_core::initialize::YuanShenClient;
 
@@ -260,12 +257,12 @@ pub async fn main() -> Result<(), YsError> {
             let dir = current_dir()?;
             let dot_rev = DotYuanShenClient::open(&dir).unwrap();
             let mut store = dot_rev.store().unwrap();
-            let branch: String = dot_rev.get_branch().unwrap();
-            let old_tip: ObjectID = dot_rev.get_branch_snapshot_id(&branch).unwrap();
+            let branch: String = dot_rev.get_branch_name().unwrap();
+            let old_tip: ObjectID = dot_rev.get_branch_id(&branch).unwrap();
             let ignores: IgnoreRules = dot_rev.ignores().unwrap();
             let directory = SnapShotDirectory::new(dir.as_path(), &ignores, &mut store).unwrap();
-            let snapshot: SnapShot = store.read_json(old_tip).await.unwrap();
-            let old_directory: SnapShotDirectory = store.read_json(snapshot.directory).await.unwrap();
+            let snapshot: SnapShot = store.get_typed(old_tip).await.unwrap();
+            let old_directory: SnapShotDirectory = store.get_typed(snapshot.directory).await.unwrap();
             serde_json::to_writer_pretty(stdout(), &old_directory.difference(&directory)).unwrap();
         }
         Commit(sub) => sub.commit().await.unwrap(),

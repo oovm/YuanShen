@@ -1,6 +1,5 @@
-use std::fs::{create_dir, try_exists};
 use super::*;
-
+use std::fs::{create_dir, try_exists};
 
 /// 本地文件系统对象储存
 #[derive(Debug, Clone)]
@@ -33,7 +32,7 @@ impl ObjectStore for LocalObjectStore {
         std::fs::try_exists(path)
     }
 
-    async fn read(&self, id: ObjectID) -> Result<Vec<u8>, Self::Error> {
+    async fn get_raw(&self, id: ObjectID) -> Result<Vec<u8>, Self::Error> {
         tracing::trace!("怎在 {} 中读取 {:?}", id, self.root);
         let s: String = format!("{}", id);
         let dir: &str = &s[0..HASH_HEADER_LENGTH];
@@ -45,13 +44,18 @@ impl ObjectStore for LocalObjectStore {
                 f.read_to_end(&mut v)?;
                 Ok(v)
             }
-            Err(err) => {
-                Err(err)
-            }
+            Err(err) => Err(err),
         }
     }
 
-    async fn insert(&mut self, object: &[u8]) -> Result<ObjectID, Self::Error> {
+    async fn get_typed<'de, O>(&self, id: ObjectID) -> Result<O, Self::Error>
+    where
+        O: Deserialize<'de>,
+    {
+        todo!()
+    }
+
+    async fn set_raw(&mut self, object: &[u8]) -> Result<ObjectID, Self::Error> {
         let id: ObjectID = object.into();
         tracing::trace!("正在插入 {} 到 {:?}", id, self.root);
         let s: String = format!("{}", id);
@@ -71,5 +75,11 @@ impl ObjectStore for LocalObjectStore {
         f.write(object)?;
         Ok(id)
     }
-}
 
+    async fn set_typed<I>(&mut self, object: &I) -> Result<ObjectID, Self::Error>
+    where
+        I: Serialize + Send + Sync,
+    {
+        todo!()
+    }
+}

@@ -5,6 +5,7 @@ use std::{
 };
 
 use crate::ObjectID;
+use blake3::HexError;
 use std::path::PathBuf;
 
 /// 便捷 Result 类型, 可以少写一个 [YsError]
@@ -77,6 +78,12 @@ impl Display for YsErrorKind {
                 todo!()
             }
         }
+    }
+}
+
+impl From<HexError> for YsError {
+    fn from(error: HexError) -> Self {
+        YsErrorKind::InvalidObject { message: error.to_string() }.into()
     }
 }
 
