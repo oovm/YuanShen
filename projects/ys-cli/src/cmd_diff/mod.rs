@@ -13,7 +13,7 @@ impl YuanShenDifference {
     pub async fn difference(self) -> Result<(), YsError> {
         let dir = current_dir().unwrap();
         let dot_rev = DotYuanShenClient::open(&dir)?;
-        let mut store = dot_rev.store()?;
+        let store = dot_rev.store()?;
         let that_branch = self.branch.as_ref();
         let this_branch: String = dot_rev.get_branch_name()?;
         if !dot_rev.branch_exists(&that_branch)? {

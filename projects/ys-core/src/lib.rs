@@ -16,7 +16,6 @@ const CURRENT_BRANCH_FILE: &'static str = "branch";
 pub use crate::{
     errors::{Result, YsError, YsErrorKind},
     objects::{
-        tree_id::TreeID,
         author_id::AuthorID,
         ignore_rules::IgnoreRules,
         object_id::ObjectID,

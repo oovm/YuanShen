@@ -1,11 +1,13 @@
-use crate::{errors::YsError, snapshot::{directory::SnapShotDirectory}, AuthorID, DirectoryEntry, IgnoreRules, LocalObjectStore, ObjectID, ObjectStore, CURRENT_BRANCH_FILE, DOT_YUAN_SHEN, TreeID};
+use crate::{
+    errors::YsError, snapshot::directory::SnapShotDirectory, AuthorID, DirectoryEntry, IgnoreRules, LocalObjectStore, ObjectID,
+    ObjectStore,  CURRENT_BRANCH_FILE, DOT_YUAN_SHEN,
+};
 use serde::{Deserialize, Serialize};
 use std::{
     borrow::Cow,
     collections::{BTreeMap, BTreeSet},
     fmt::{Debug, Display, Formatter},
     fs::{create_dir, create_dir_all, read_dir, read_to_string, try_exists, File},
-    future::Future,
     io::Write,
     path::{Path, PathBuf},
 };

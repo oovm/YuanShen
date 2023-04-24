@@ -17,24 +17,19 @@ impl MemoryObjectStore {
 }
 
 impl ObjectStore for MemoryObjectStore {
-    type Error = Infallible;
 
-    async fn has(&self, _: ObjectID) -> Result<bool, Self::Error> {
+    async fn has(&self, _: ObjectID) -> Result<bool, YsError> {
         return Ok(true);
     }
 
-    async fn get_raw(&self, id: ObjectID) -> Result<Vec<u8>, Self::Error> {
+    async fn get(&self, id: ObjectID) -> Result<Vec<u8>, YsError> {
         match self.btree.get(&id) {
             Some(v) => Ok(v.clone()),
             None => Ok(vec![]),
         }
     }
-
-    async fn get_typed<'de, O>(&self, id: ObjectID) -> Result<O, Self::Error> where O: Deserialize<'de> {
-        todo!()
-    }
-
-    async fn set_raw(&mut self, object: &[u8]) -> Result<ObjectID, Self::Error> {
+    
+    async fn put(&mut self, object: &[u8]) -> Result<ObjectID, YsError> {
         let id: ObjectID = object.into();
         match self.btree.entry(id) {
             // id 不存在, 插入新对象
@@ -45,9 +40,5 @@ impl ObjectStore for MemoryObjectStore {
             // id 已经存在, 同一个对象只会有一个 id, 无需重复插入
             Entry::Occupied(_) => Ok(id),
         }
-    }
-
-    async fn set_typed<I>(&mut self, object: &I) -> Result<ObjectID, Self::Error> where I: Serialize + Send + Sync {
-        todo!()
     }
 }

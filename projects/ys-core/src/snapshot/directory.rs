@@ -1,4 +1,3 @@
-use blake3::Hash;
 use std::{
     collections::BTreeMap,
     fs::{read_dir, File},
@@ -8,11 +7,8 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    utils::{hash_json, write_json},
-    IgnoreRules, ObjectID, ObjectStore, TreeID, YsError,
-};
-use crate::utils::vec_json;
+use crate::{IgnoreRules, ObjectID, ObjectStore, YsError};
+
 
 /// A directory tree, with [`ObjectID`]s at the leaves.
 #[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize, Default)]
@@ -21,25 +17,20 @@ pub struct SnapShotDirectory {
     pub root: BTreeMap<String, DirectoryEntry>,
 }
 
-#[derive(Debug)]
-pub enum Error<Store: ObjectStore> {
-    ObjectMissing(ObjectID),
-    Store(Store::Error),
-    IO(std::io::Error),
-}
+
 
 impl SnapShotDirectory {
     /// Write out the directory structure at the given directory path.
     ///
     /// The target directory must already exist.
-    pub async fn write<Store: ObjectStore>(&self, store: &Store, path: &Path) -> Result<(), Error<Store>> {
+    pub async fn write<Store: ObjectStore>(&self, store: &Store, path: &Path) -> Result<(), YsError> {
         if read_dir(path).is_ok() {
             for (file_name, entry) in self.root.iter() {
                 match entry {
                     DirectoryEntry::File(id) => {
-                        let v = store.get_raw(*id).await.map_err(Error::Store)?;
-                        let mut f = File::options().create(true).write(true).open(path.join(file_name)).map_err(Error::IO)?;
-                        f.write(&v).map_err(Error::IO)?;
+                        let v = store.get(*id).await?;
+                        let mut f = File::options().create(true).write(true).open(path.join(file_name))?;
+                        f.write(&v)?;
                     }
                     DirectoryEntry::Directory(dir) => {
                         dir.write(store, PathBuf::from(path).join(file_name).as_path()).await?;
@@ -58,24 +49,24 @@ pub enum DirectoryEntry {
 }
 
 impl SnapShotDirectory {
-    pub fn new<Store: ObjectStore>(dir: &Path, ignores: &IgnoreRules, store: &mut Store) -> Result<Box<Self>, Error<Store>> {
+    pub fn new<Store: ObjectStore>(dir: &Path, ignores: &IgnoreRules, store: &mut Store) -> Result<Box<Self>, YsError> {
         let mut root = BTreeMap::new();
-        for f in std::fs::read_dir(dir).map_err(Error::IO)? {
-            let dir_entry = f.map_err(Error::IO)?;
+        for f in std::fs::read_dir(dir)? {
+            let dir_entry = f?;
             if ignores.glob.contains(&dir_entry.file_name().into_string().unwrap()) {
                 continue;
             }
-            let file_type = dir_entry.file_type().map_err(Error::IO)?;
+            let file_type = dir_entry.file_type()?;
             if file_type.is_dir() {
                 let directory = SnapShotDirectory::new(dir_entry.path().as_path(), ignores, store)?;
                 root.insert(dir_entry.file_name().into_string().unwrap(), DirectoryEntry::Directory(directory));
             }
             else if file_type.is_file() {
-                let id = ObjectID::try_from(dir_entry.path().as_path()).map_err(Error::IO)?;
+                let id = ObjectID::try_from(dir_entry.path().as_path())?;
                 root.insert(dir_entry.file_name().into_string().unwrap(), DirectoryEntry::File(id));
                 let mut v = Vec::new();
-                let mut obj_file = File::options().read(true).open(dir_entry.path()).map_err(Error::IO)?;
-                obj_file.read_to_end(&mut v).map_err(Error::IO)?;
+                let mut obj_file = File::options().read(true).open(dir_entry.path())?;
+                obj_file.read_to_end(&mut v)?;
                 todo!()
                 // store.insert(&v).await.map_err(Error::Store)?;
             }

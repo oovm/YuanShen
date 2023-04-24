@@ -1,7 +1,7 @@
 use clap::Args;
 use std::env::current_dir;
 use ys_core::{
-    initialize::{DotYuanShenClient, InitializeConfig},
+    initialize::{DotYuanShenClient, },
     YsError,
 };
 use ys_core::initialize::YuanShenClient;

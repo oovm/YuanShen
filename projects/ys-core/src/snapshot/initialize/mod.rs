@@ -1,9 +1,8 @@
 use super::*;
 use crate::{
     utils::{read_json, write_json},
-    TreeID, YsErrorKind,
+     YsErrorKind,
 };
-use std::str::FromStr;
 
 /// `.ys` 文件夹
 #[derive(Debug)]
@@ -33,13 +32,13 @@ impl InitializeConfig {
         // 创建初始提交
         let mut store = LocalObjectStore::new(self.join("store"))?;
         let directory = SnapShotDirectory::default();
-        let directory = store.set_typed(&directory).await?;
+        let directory = store.put_typed(&directory).await?;
         let snapshot = SnapShot {
             directory,
             previous: BTreeSet::new(),
             data: SnapShotData { kind: 0, message: "Project initialized!".to_string(), authors: Default::default() },
         };
-        let snapshot_id = store.set_typed(&snapshot).await?;
+        let snapshot_id = store.put_typed(&snapshot).await?;
         write_json(&snapshot_id, &root.join("branches").join(self.initial_branch.as_ref()))?;
 
         Ok(DotYuanShenClient { dot_root: root, dot_config: config })

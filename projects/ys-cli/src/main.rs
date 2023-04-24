@@ -228,7 +228,7 @@ impl Subcommand for YsCommand {
         .subcommand({
             Command::new("逆城市化").about("这些对象有点太城市化了").long_about(None).alias("gc").alias("garbage-collect")
         })
-        .external_subcommand_value_parser({ _AutoValueParser::<String>::new().value_parser() })
+        .external_subcommand_value_parser(_AutoValueParser::<String>::new().value_parser())
     }
 
     fn augment_subcommands_for_update(cmd: Command) -> Command {
