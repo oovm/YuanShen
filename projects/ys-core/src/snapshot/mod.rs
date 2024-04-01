@@ -1,6 +1,6 @@
 use crate::{
-    errors::YsError, objects::object_store::YuanShenObject, snapshot::directory::SnapShotTree, AuthorID, DirectoryEntry,
-    IgnoreRules, LocalObjectStore, ObjectID, ObjectStore, DOT_YUAN_SHEN,
+    errors::YsError,  snapshot::directory::SnapShotTree, AuthorID, DirectoryEntry,
+    IgnoreRules, LocalObjectStore, ObjectID,  DOT_YUAN_SHEN,
 };
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
@@ -14,6 +14,7 @@ use std::{
     time::SystemTime,
 };
 use crate::objects::commit_parent::CommitParent;
+use crate::objects::YuanShenObject;
 
 pub mod differences;
 pub mod directory;

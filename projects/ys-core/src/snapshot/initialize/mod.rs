@@ -32,16 +32,16 @@ impl InitializeConfig {
         // 创建初始提交
         let mut store = LocalObjectStore::new(self.join("store"))?;
         let directory = SnapShotTree::default();
-        let directory = store.put_typed(&directory).await?;
-        let snapshot = Commit {
-            datetime: SystemTime::now(),
-            parents: vec![],
-            authors: Default::default(),
-        };
+        // let directory = store.put_typed(&directory).await?;
+        // let snapshot = Commit {
+        //     datetime: SystemTime::now(),
+        //     parents: vec![],
+        //     authors: Default::default(),
+        // };
         // extra: SnapShotData { kind: 0, message: "Project initialized!".to_string(), authors: Default::default() },
-        let snapshot_id = store.put_typed(&snapshot).await?;
-        write_json(&snapshot_id, &root.join("branches").join(self.initial_branch.as_ref()))?;
-
+        // let snapshot_id = store.put_typed(&snapshot).await?;
+        // write_json(&snapshot_id, &root.join("branches").join(self.initial_branch.as_ref()))?;
+        todo!();
         Ok(DotYuanShenClient { dot_root: root, dot_config: config })
     }
     fn generate_branches(&self) -> std::io::Result<()> {

@@ -23,3 +23,7 @@ pub mod text_file;
 pub mod binary_file;
 
 
+pub trait YuanShenObject {
+    fn object_id(&self) -> ObjectID;
+}
+

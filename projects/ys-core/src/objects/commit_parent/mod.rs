@@ -1,6 +1,7 @@
-use crate::{objects::object_store::YuanShenObject, ObjectID};
+use crate::{ ObjectID};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::ser::SerializeMap;
+use crate::objects::YuanShenObject;
 
 #[derive(Copy, Clone, Debug)]
 pub struct CommitParent {
@@ -29,4 +30,8 @@ impl<'de> Deserialize<'de> for CommitParent {
     }
 }
 
-impl YuanShenObject for CommitParent {}
+impl YuanShenObject for CommitParent {
+    fn object_id(&self) -> ObjectID {
+        todo!()
+    }
+}

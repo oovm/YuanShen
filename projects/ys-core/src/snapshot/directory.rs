@@ -7,8 +7,10 @@ use std::{
 
 use serde::{ser::SerializeMap, Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::{objects::object_store::YuanShenObject, IgnoreRules, ObjectID, ObjectStore, YsError};
+use crate::{IgnoreRules, ObjectID,  YsError};
 use crate::objects::text_file::TextFile;
+use crate::objects::YuanShenObject;
+use crate::storage::YuanShenClient;
 
 // A directory tree, with [`ObjectID`]s at the leaves.
 #[derive(PartialEq, Eq, Debug, Clone, Default)]
@@ -84,13 +86,17 @@ pub struct SubTreeObject {
     id: ObjectID,
 }
 
-impl YuanShenObject for SnapShotTree {}
+impl YuanShenObject for SnapShotTree {
+    fn object_id(&self) -> ObjectID {
+        todo!()
+    }
+}
 
 impl SnapShotTree {
     /// Write out the directory structure at the given directory path.
     ///
     /// The target directory must already exist.
-    pub async fn write<Store: ObjectStore>(&self, store: &Store, path: &Path) -> Result<(), YsError> {
+    pub async fn write<Store: YuanShenClient>(&self, store: &Store, path: &Path) -> Result<(), YsError> {
         todo!();
         // if read_dir(path).is_ok() {
         //     for (file_name, entry) in self.root.iter() {
@@ -111,7 +117,7 @@ impl SnapShotTree {
 }
 
 impl SnapShotTree {
-    pub fn new<Store: ObjectStore>(dir: &Path, ignores: &IgnoreRules, store: &mut Store) -> Result<Self, YsError> {
+    pub fn new<Store: YuanShenClient>(dir: &Path, ignores: &IgnoreRules, store: &mut Store) -> Result<Self, YsError> {
         todo!();
         // let mut root = BTreeMap::new();
         // for f in std::fs::read_dir(dir)? {

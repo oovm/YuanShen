@@ -6,6 +6,17 @@ impl From<blake3::Hash> for ObjectID {
     }
 }
 
+impl YuanShenObject for String {
+    fn object_id(&self) -> ObjectID {
+        ObjectID { hash256: blake3::hash(self.as_bytes()) }
+    }
+}
+impl<'a> YuanShenObject for &'a str {
+    fn object_id(&self) -> ObjectID {
+        ObjectID { hash256: blake3::hash(self.as_bytes()) }
+    }
+}
+
 impl From<&Vec<u8>> for ObjectID {
     fn from(vec: &Vec<u8>) -> Self {
         ObjectID { hash256: blake3::hash(&vec) }
