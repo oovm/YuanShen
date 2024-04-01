@@ -7,6 +7,7 @@ use std::{
 use crate::ObjectID;
 use blake3::HexError;
 use std::path::PathBuf;
+use std::string::FromUtf8Error;
 
 /// 便捷 Result 类型, 可以少写一个 [YsError]
 pub type Result<T> = std::result::Result<T, YsError>;
@@ -48,9 +49,9 @@ pub enum YsErrorKind {
         path: Option<PathBuf>,
     },
     // 序列化或反序列化错误类型，包含原始的序列化错误信息。
-    Serde {
+    Decode {
         /// 原始序列化错误。
-        error: serde_json::Error,
+        message: String,
     },
     /// 表示找不到特定对象的错误类型。
     MissingObject {
@@ -68,7 +69,7 @@ impl Display for YsErrorKind {
             Self::IO { .. } => {
                 todo!()
             }
-            Self::Serde { .. } => {
+            Self::Decode { .. } => {
                 todo!()
             }
             Self::MissingObject { id } => {
@@ -107,6 +108,12 @@ impl From<std::io::Error> for YsError {
 
 impl From<serde_json::Error> for YsError {
     fn from(error: serde_json::Error) -> Self {
-        YsErrorKind::Serde { error }.into()
+        YsErrorKind::Decode { message: error.to_string() }.into()
+    }
+}
+
+impl From<FromUtf8Error> for YsError {
+    fn from(error: FromUtf8Error) -> Self {
+        YsErrorKind::Decode { message: error.to_string() }.into()
     }
 }
