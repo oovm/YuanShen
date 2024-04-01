@@ -40,19 +40,19 @@ impl ObjectProxy for MemoryObjectPool {
         Ok(TextFile { file_id: id })
     }
 
-    async fn get_buffer(&self, text: TextFile) -> Result<String, YsError> {
+    async fn get_buffer(&self, _: TextFile) -> Result<String, YsError> {
         todo!()
     }
 
-    async fn get_buffer_file(&self, text: TextFile, file: &mut File) -> Result<(), YsError> {
+    async fn get_buffer_file(&self, _: TextFile, _: &mut File) -> Result<(), YsError> {
         todo!()
     }
 
-    async fn put_buffer(&self, text: &str) -> Result<TextFile, YsError> {
+    async fn put_buffer(&self, _: &str) -> Result<TextFile, YsError> {
         todo!()
     }
 
-    async fn put_buffer_file(&self, file: &mut File) -> Result<TextFile, YsError> {
+    async fn put_buffer_file(&self, _: &mut File) -> Result<TextFile, YsError> {
         todo!()
     }
 }

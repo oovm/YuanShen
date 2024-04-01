@@ -112,9 +112,9 @@ pub trait ObjectProxy {
 
 pub trait BranchProxy {
     fn current(&self) -> impl Future<Output = Result<String, YsError>> + Send;
-    
+
     fn has_branch(&self, branch: &str) -> impl Future<Output = Result<bool, YsError>> + Send;
-    
+
     fn get_branch(&self, branch: &str) -> impl Future<Output = Result<ObjectID, YsError>> + Send;
     fn set_branch(&self, branch: &str) -> impl Future<Output = Result<(), YsError>> + Send;
 }

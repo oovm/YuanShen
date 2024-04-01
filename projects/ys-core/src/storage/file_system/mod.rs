@@ -1,6 +1,5 @@
 use super::*;
-use crate::utils::copy;
-use std::{io::Error, path::Path};
+
 
 /// 本地文件系统对象储存
 #[derive(Debug, Clone)]
@@ -59,7 +58,7 @@ impl ObjectProxy for LocalDotYuanShen {
         Ok(TextFile { file_id: id })
     }
 
-    async fn get_buffer(&self, id: TextFile) -> Result<String, YsError> {
+    async fn get_buffer(&self, _: TextFile) -> Result<String, YsError> {
         todo!()
     }
 

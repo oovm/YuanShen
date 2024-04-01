@@ -2,7 +2,7 @@ use crate::{
     errors::YsError,
     objects::{IgnoreRules, ObjectID},
     snapshot::directory::SnapShotTree,
-    utils::{read_json, truncate_write, write_json},
+    utils::{read_json,  write_json},
     DirectoryEntry, DOT_YUAN_SHEN,
 };
 use std::{
