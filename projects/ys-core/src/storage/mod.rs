@@ -1,7 +1,7 @@
 use crate::{
     objects::{ObjectID, TextFile, TextIncrementalData},
     traits::BranchProxy,
-    utils::{from_json, read_string, truncate_write},
+    utils::{from_json, read_to_string, truncate_write},
     ObjectProxy, YsError, YsErrorKind, YuanShenObject,
 };
 use dashmap::DashMap;

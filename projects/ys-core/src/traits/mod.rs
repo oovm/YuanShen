@@ -3,6 +3,7 @@ use crate::{
     YsError,
 };
 use std::future::Future;
+use std::path::Path;
 use tokio::fs::File;
 
 pub trait YuanShenID {
@@ -52,7 +53,7 @@ pub trait ObjectProxy {
     fn get_string(&self, text: TextFile) -> impl Future<Output = Result<String, YsError>> + Send;
 
     /// Try to get the string in TextFile
-    fn get_string_file(&self, text: TextFile, file: &mut File) -> impl Future<Output = Result<(), YsError>> + Send;
+    fn get_string_file(&self, text: TextFile, file: &Path) -> impl Future<Output = Result<(), YsError>> + Send;
 
     /// Try to put the string in TextFile
     ///
@@ -70,7 +71,7 @@ pub trait ObjectProxy {
     fn put_string(&self, text: &str) -> impl Future<Output = Result<TextFile, YsError>> + Send;
 
     /// Try to put the string in TextFile
-    fn put_string_file(&self, file: &mut File) -> impl Future<Output = Result<TextFile, YsError>> + Send;
+    fn put_string_file(&self, file: &Path) -> impl Future<Output = Result<TextFile, YsError>> + Send;
 
     /// Try to get the string in TextFile
     ///

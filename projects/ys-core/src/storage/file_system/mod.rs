@@ -1,6 +1,6 @@
 use super::*;
-
-
+use crate::utils::copy;
+use std::{io::Error, path::Path};
 
 /// 本地文件系统对象储存
 #[derive(Debug, Clone)]
@@ -23,43 +23,43 @@ const HASH_HEADER_LENGTH: usize = 2;
 
 impl ObjectProxy for LocalDotYuanShen {
     async fn has(&self, id: ObjectID) -> Result<bool, YsError> {
-        tracing::trace!("检查 {} 中是否存在 {:?}", id, self.root);
-        let s: String = id.to_string();
-        let dir: &str = &s[0..HASH_HEADER_LENGTH];
-        let filename: &str = &s[HASH_HEADER_LENGTH..];
-        let path = self.root.join(format!("{}/{}", dir, filename));
-        Ok(std::fs::try_exists(path)?)
+        Ok(self.store_file(id).exists())
     }
 
-    async fn get_string(&self, _: TextFile) -> Result<String, YsError> {
-        todo!()
+    async fn get_string(&self, id: TextFile) -> Result<String, YsError> {
+        let file = self.store_file(id.file_id);
+        read_to_string(file).await
     }
 
-    async fn get_string_file(&self, _: TextFile, _: &mut File) -> Result<(), YsError> {
-        todo!()
+    async fn get_string_file(&self, id: TextFile, file: &Path) -> Result<(), YsError> {
+        let src = self.store_file(id.file_id);
+        copy(&src, file.to_path_buf()).await
     }
 
-    // async fn get(&self, id: ObjectID) -> Result<Vec<u8>, YsError> {
-    //     tracing::trace!("怎在 {} 中读取 {:?}", id, self.root);
-    //     let s: String = format!("{}", id);
-    //     let dir: &str = &s[0..HASH_HEADER_LENGTH];
-    //     let filename: &str = &s[HASH_HEADER_LENGTH..];
-    //     let path = self.root.join(format!("{}/{}", dir, filename));
-    //     let mut f = std::fs::File::options().read(true).open(path)?;
-    //     let mut v = Vec::new();
-    //     f.read_to_end(&mut v)?;
-    //     Ok(v)
-    // }
-
-    async fn put_string(&self, _: &str) -> Result<TextFile, YsError> {
-        todo!()
+    async fn put_string(&self, text: &str) -> Result<TextFile, YsError> {
+        let id = text.object_id();
+        let file = self.store_file(id);
+        if file.exists() {
+            // assume the file is legal
+        }
+        else {
+            truncate_write(file, text.as_bytes()).await?
+        }
+        Ok(TextFile { file_id: id })
     }
 
-    async fn put_string_file(&self, _: &mut tokio::fs::File) -> Result<TextFile, YsError> {
-        todo!()
+    async fn put_string_file(&self, file: &Path) -> Result<TextFile, YsError> {
+        let id = ObjectID::try_from(file)?;
+        if file.exists() {
+            // assume the file is legal
+        }
+        else {
+            copy(&file, self.store_file(id)).await?
+        }
+        Ok(TextFile { file_id: id })
     }
 
-    async fn get_buffer(&self, _: TextFile) -> Result<String, YsError> {
+    async fn get_buffer(&self, id: TextFile) -> Result<String, YsError> {
         todo!()
     }
 
@@ -100,7 +100,7 @@ impl LocalDotYuanShen {
 
 impl BranchProxy for LocalDotYuanShen {
     async fn current(&self) -> Result<String, YsError> {
-        read_string(self.branch_file()?).await
+        read_to_string(self.branch_file()?).await
     }
 
     async fn has_branch(&self, branch: &str) -> Result<bool, YsError> {
@@ -111,7 +111,7 @@ impl BranchProxy for LocalDotYuanShen {
     async fn get_branch(&self, branch: &str) -> Result<ObjectID, YsError> {
         let file = self.branches_directory()?.join(branch);
         if file.exists() {
-            let id = read_string(file).await?;
+            let id = read_to_string(file).await?;
             return Ok(id.parse()?);
         }
         else {
@@ -125,6 +125,18 @@ impl BranchProxy for LocalDotYuanShen {
 }
 
 impl LocalDotYuanShen {
+    /// Get the path to the file that stores the object with the given `id`.
+    pub fn store_file(&self, id: ObjectID) -> PathBuf {
+        let s = id.to_string();
+        // SAFETY: `id` is a valid `ObjectID`
+        unsafe {
+            let dir = s.get_unchecked(0..HASH_HEADER_LENGTH);
+            let filename = s.get_unchecked(HASH_HEADER_LENGTH..);
+            self.root.join(".ys").join("store").join(dir).join(filename)
+        }
+    }
+
+    /// Get the path to the directory that stores branches.
     pub fn branches_directory(&self) -> Result<PathBuf, YsError> {
         let dir = self.root.join(".ys").join("branches");
         if !dir.exists() {
@@ -142,6 +154,7 @@ impl LocalDotYuanShen {
         Ok(dir)
     }
 
+    /// Get the path to the file that stores the current branch.
     pub fn branch_file(&self) -> Result<PathBuf, YsError> {
         let file = self.root.join(".ys").join("branch");
         if !file.exists() {

@@ -1,6 +1,5 @@
 use super::*;
-
-
+use std::path::Path;
 
 /// [ObjectProxy] in memory, all changes will disappear after the program exits, used for testing.
 #[derive(Clone, Debug)]
@@ -23,9 +22,9 @@ impl ObjectProxy for MemoryObjectPool {
         self.get_text_data(text.file_id)?.resolve(self).await
     }
 
-    async fn get_string_file(&self, text: TextFile, file: &mut File) -> Result<(), YsError> {
+    async fn get_string_file(&self, text: TextFile, file: &Path) -> Result<(), YsError> {
         let string = self.get_string(text).await?;
-        Ok(file.write_all(string.as_bytes()).await?)
+        truncate_write(file.to_path_buf(), string.as_bytes()).await
     }
 
     async fn put_string(&self, text: &str) -> Result<TextFile, YsError> {
@@ -34,10 +33,9 @@ impl ObjectProxy for MemoryObjectPool {
         Ok(TextFile { file_id: id })
     }
 
-    async fn put_string_file(&self, file: &mut File) -> Result<TextFile, YsError> {
-        let mut buffer = String::new();
-        let _ = file.read_to_string(&mut buffer).await?;
-        let id = buffer.as_bytes().object_id();
+    async fn put_string_file(&self, file: &Path) -> Result<TextFile, YsError> {
+        let buffer = read_to_string(file.to_path_buf()).await?;
+        let id = buffer.object_id();
         self.objects.insert(id, buffer.as_bytes().to_vec());
         Ok(TextFile { file_id: id })
     }

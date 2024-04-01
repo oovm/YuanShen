@@ -74,7 +74,7 @@ pub async fn truncate_write(path: PathBuf, bytes: &[u8]) -> Result<(), YsError> 
     }
 }
 
-pub async fn read_string(path: PathBuf) -> Result<String, YsError> {
+pub async fn read_to_string(path: PathBuf) -> Result<String, YsError> {
     let mut buffer = String::new();
     let open = File::options().open(&path);
     match open.and_then(|mut o| o.read_to_string(&mut buffer)) {
@@ -83,7 +83,17 @@ pub async fn read_string(path: PathBuf) -> Result<String, YsError> {
             return Err(YsErrorKind::IO { error: e, path: Some(path) })?;
         }
     }
+
 }
+
+pub async fn copy(source: &Path, target: PathBuf) -> Result<(), YsError> {
+    match tokio::fs::copy(&source, &target).await {
+        Ok(_) => Ok(()),
+        Err(e) => Err(YsError::path_error(e, target)),
+    }
+}
+
+
 
 /// Create a test environment which returns the [Result<()>]
 pub fn async_test<F>(future: F)

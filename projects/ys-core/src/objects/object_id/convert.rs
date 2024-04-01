@@ -44,11 +44,16 @@ impl TryFrom<std::fs::File> for ObjectID {
     }
 }
 
-impl<'a> TryFrom<&Path> for ObjectID {
-    type Error = std::io::Error;
+impl<'a> TryFrom<&'a Path> for ObjectID {
+    type Error = YsError;
 
-    fn try_from(p: &Path) -> Result<Self, Self::Error> {
-        ObjectID::try_from(std::fs::File::options().read(true).open(p)?)
+    fn try_from(p: &'a Path) -> Result<Self, Self::Error> {
+        let path = std::fs::File::options().read(true).open(p);
+        let mut buffer = vec![];
+        match path.and_then(|mut o| o.read_to_end(&mut buffer)) {
+            Ok(_) => Ok(buffer.object_id()),
+            Err(e) => Err(YsError::path_error(e, p.to_path_buf())),
+        }
     }
 }
 

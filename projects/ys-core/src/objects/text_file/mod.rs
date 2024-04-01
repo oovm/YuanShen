@@ -86,21 +86,19 @@ impl TextFile {
         store.put_string(text).await
     }
     /// Write the text file to [ObjectProxy]
-    pub async fn write_file<O>(&self, file: &mut File, store: &O) -> Result<Self, YsError>
+    pub async fn write_file<O>(&self, file: &Path, store: &O) -> Result<Self, YsError>
     where
         O: ObjectProxy,
     {
         store.put_string_file(file).await
     }
     /// Write the text file to [ObjectProxy]
-    pub async fn write_path<O, P>(&self, file: &mut P, store: &O) -> Result<Self, YsError>
+    pub async fn write_path<O, P>(&self, file: &P, store: &O) -> Result<Self, YsError>
     where
         O: ObjectProxy,
         P: AsRef<Path>,
     {
-        // TODO: ensure text file
-        let mut file = File::open(file.as_ref()).await?;
-        store.put_string_file(&mut file).await
+        store.put_string_file(file.as_ref()).await
     }
 }
 
