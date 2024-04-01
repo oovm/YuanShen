@@ -49,7 +49,7 @@ impl DirectoryEntry {
     pub fn difference(&self, other: &DirectoryEntry) -> Option<DifferenceEntry> {
         use crate::snapshot::directory::DirectoryEntry::*;
         match (self, other) {
-            (File(id), File(id_)) => {
+            (Text(id), Text(id_)) => {
                 if id != id_ {
                     Some(DifferenceEntry::File(*id_))
                 }
@@ -57,8 +57,8 @@ impl DirectoryEntry {
                     None
                 }
             }
-            (Directory(_), File(id)) => Some(DifferenceEntry::File(*id)),
-            (File(_), Directory(d)) => Some(DifferenceEntry::Directory(Box::new(SnapShotDifference {
+            (Directory(_), Text(id)) => Some(DifferenceEntry::File(*id)),
+            (Text(_), Directory(d)) => Some(DifferenceEntry::Directory(Box::new(SnapShotDifference {
                 deleted: BTreeSet::new(),
                 added: d.root.clone(),
                 modified: BTreeMap::new(),
@@ -127,7 +127,7 @@ impl Display for SnapShotDifference {
                     diff_paths.insert(path, DifferenceStackType::Deleted);
                 }
                 DifferenceStackItem::Added(path, dir_entry) => match dir_entry {
-                    DirectoryEntry::File(_) => {
+                    DirectoryEntry::Text(_) => {
                         diff_paths.insert(path, DifferenceStackType::Added);
                     }
                     DirectoryEntry::Directory(dir) => {

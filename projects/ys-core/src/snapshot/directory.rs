@@ -37,10 +37,10 @@ impl<'de> Deserialize<'de> for SnapShotTree {
     }
 }
 
-#[derive(PartialEq, Eq, Debug, Clone, Default)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum DirectoryEntry {
     Directory(DirectoryObject),
-    File(FileObject),
+    Text(TextFile),
     /// A reference to other snapshots.
     Subtree(SubTreeObject),
 }
@@ -71,9 +71,7 @@ impl<'de> Deserialize<'de> for DirectoryObject {
     }
 }
 
-pub struct FileObject {
-    id: ObjectID,
-}
+
 
 pub struct SubTreeObject {
     id: ObjectID,
@@ -89,7 +87,7 @@ impl SnapShotTree {
         if read_dir(path).is_ok() {
             for (file_name, entry) in self.root.iter() {
                 match entry {
-                    DirectoryEntry::File(id) => {
+                    DirectoryEntry::Text(id) => {
                         let v = store.get(*id).await?;
                         let mut f = File::options().create(true).write(true).open(path.join(file_name))?;
                         f.write(&v)?;
@@ -119,7 +117,7 @@ impl SnapShotTree {
             }
             else if file_type.is_file() {
                 let id = ObjectID::try_from(dir_entry.path().as_path())?;
-                root.insert(dir_entry.file_name().into_string().unwrap(), DirectoryEntry::File(id));
+                root.insert(dir_entry.file_name().into_string().unwrap(), DirectoryEntry::Text(id));
                 let mut v = Vec::new();
                 let mut obj_file = File::options().read(true).open(dir_entry.path())?;
                 obj_file.read_to_end(&mut v)?;

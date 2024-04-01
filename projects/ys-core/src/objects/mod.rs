@@ -19,4 +19,6 @@ pub mod ignore_rules;
 pub mod object_id;
 pub mod object_store;
 pub mod commit_parent;
+pub mod text_file;
+
 

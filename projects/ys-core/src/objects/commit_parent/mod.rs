@@ -3,8 +3,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Clone, Debug)]
 pub struct CommitParent {
-    tree: ObjectID,
-    modifier: ObjectID,
+    pub tree: ObjectID,
+    pub modifier: ObjectID,
 }
 
 impl Serialize for CommitParent {
@@ -12,7 +12,10 @@ impl Serialize for CommitParent {
     where
         S: Serializer,
     {
-        todo!()
+        let mut map = serializer.serialize_map(Some(2));
+        map.serialize_entry("tree", &self.tree)?;
+        map.serialize_entry("modifier", &self.modifier)?;
+        map.end()
     }
 }
 

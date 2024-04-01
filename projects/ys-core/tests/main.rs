@@ -40,7 +40,7 @@ fn test_diff_display() {
 
     let deleted_foo = BTreeSet::from([String::from("foo")]);
     let added_bar: BTreeMap<String, DirectoryEntry> =
-        vec![(String::from("bar"), DirectoryEntry::File(ObjectID::from(&vec![])))].into_iter().collect();
+        vec![(String::from("bar"), DirectoryEntry::Text(ObjectID::from(&vec![])))].into_iter().collect();
 
     let diff_1: SnapShotDifference =
         SnapShotDifference { deleted: BTreeSet::new(), added: added_bar.clone(), modified: BTreeMap::new() };

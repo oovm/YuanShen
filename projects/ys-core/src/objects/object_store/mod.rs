@@ -4,6 +4,8 @@ use serde::de::DeserializeOwned;
 pub mod file_system;
 pub mod in_memory;
 
+
+
 /// 对象储存位置的通用接口，定义了在内存、目录或网络中存储、读取和检查对象的基本操作。
 #[allow(async_fn_in_trait)]
 pub trait ObjectStore {
