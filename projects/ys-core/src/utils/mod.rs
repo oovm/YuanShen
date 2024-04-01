@@ -5,7 +5,7 @@ use serde_json::{ser::PrettyFormatter, Serializer};
 use std::{
     fmt::Formatter,
     fs::File,
-    io::Write,
+    io::{Read, Write},
     path::{Path, PathBuf},
 };
 
@@ -64,12 +64,23 @@ where
     Ok(blake3::hash(&buffer))
 }
 
-pub fn truncate_write(path: PathBuf, bytes: &[u8]) -> Result<usize, YsError> {
+pub async fn truncate_write(path: PathBuf, bytes: &[u8]) -> Result<(), YsError> {
     let open = File::options().write(true).truncate(true).open(&path);
     match open.and_then(|mut o| o.write(bytes)) {
-        Ok(o) => Ok(o),
+        Ok(_) => Ok(()),
         Err(e) => {
             return Err(YsErrorKind::IO { error: e, path: Some(path.to_path_buf()) })?;
+        }
+    }
+}
+
+pub async fn read_string(path: PathBuf) -> Result<String, YsError> {
+    let mut buffer = String::new();
+    let open = File::options().open(&path);
+    match open.and_then(|mut o| o.read_to_string(&mut buffer)) {
+        Ok(_) => Ok(buffer),
+        Err(e) => {
+            return Err(YsErrorKind::IO { error: e, path: Some(path) })?;
         }
     }
 }

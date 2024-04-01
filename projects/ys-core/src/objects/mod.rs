@@ -1,4 +1,4 @@
-use crate::{DirectoryEntry, YsError, YsErrorKind, YuanShenClient, YuanShenID, YuanShenObject};
+use crate::{DirectoryEntry, YsError, YsErrorKind, ObjectProxy, YuanShenID, YuanShenObject};
 pub use author_id::AuthorID;
 pub use binary_file::{BinaryEdit, BinaryFile, BinaryIncremental};
 pub use commit_id::CommitParent;

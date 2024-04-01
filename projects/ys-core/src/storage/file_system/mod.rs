@@ -1,6 +1,7 @@
 use super::*;
 
 
+
 /// 本地文件系统对象储存
 #[derive(Debug, Clone)]
 pub struct LocalDotYuanShen {
@@ -20,10 +21,10 @@ impl LocalDotYuanShen {
 
 const HASH_HEADER_LENGTH: usize = 2;
 
-impl YuanShenClient for LocalDotYuanShen {
+impl ObjectProxy for LocalDotYuanShen {
     async fn has(&self, id: ObjectID) -> Result<bool, YsError> {
         tracing::trace!("检查 {} 中是否存在 {:?}", id, self.root);
-        let s: String = format!("{}", id);
+        let s: String = id.to_string();
         let dir: &str = &s[0..HASH_HEADER_LENGTH];
         let filename: &str = &s[HASH_HEADER_LENGTH..];
         let path = self.root.join(format!("{}/{}", dir, filename));
@@ -94,5 +95,67 @@ impl LocalDotYuanShen {
         let mut f = File::options().create(true).write(true).open(path).await?;
         f.write(&object).await?;
         Ok(id)
+    }
+}
+
+impl BranchProxy for LocalDotYuanShen {
+    async fn current(&self) -> Result<String, YsError> {
+        read_string(self.branch_file()?).await
+    }
+
+    async fn has_branch(&self, branch: &str) -> Result<bool, YsError> {
+        let file = self.branches_directory()?.join(branch);
+        Ok(file.exists())
+    }
+
+    async fn get_branch(&self, branch: &str) -> Result<ObjectID, YsError> {
+        let file = self.branches_directory()?.join(branch);
+        if file.exists() {
+            let id = read_string(file).await?;
+            return Ok(id.parse()?);
+        }
+        else {
+            todo!("create new")
+        }
+    }
+
+    async fn set_branch(&self, branch: &str) -> Result<(), YsError> {
+        truncate_write(self.branch_file()?, branch.as_bytes()).await
+    }
+}
+
+impl LocalDotYuanShen {
+    pub fn branches_directory(&self) -> Result<PathBuf, YsError> {
+        let dir = self.root.join(".ys").join("branches");
+        if !dir.exists() {
+            return Err(YsError::path_error(
+                std::io::Error::new(std::io::ErrorKind::NotFound, "`.ys/branches/` folder not found"),
+                dir,
+            ));
+        }
+        if !dir.is_dir() {
+            return Err(YsError::path_error(
+                std::io::Error::new(std::io::ErrorKind::NotFound, "`.ys/branches/` must be a folder"),
+                dir,
+            ));
+        }
+        Ok(dir)
+    }
+
+    pub fn branch_file(&self) -> Result<PathBuf, YsError> {
+        let file = self.root.join(".ys").join("branch");
+        if !file.exists() {
+            return Err(YsError::path_error(
+                std::io::Error::new(std::io::ErrorKind::NotFound, "`.ys/branch` file not found"),
+                file,
+            ));
+        }
+        if !file.is_file() {
+            return Err(YsError::path_error(
+                std::io::Error::new(std::io::ErrorKind::NotFound, "`.ys/branch` must be a file"),
+                file,
+            ));
+        }
+        Ok(file)
     }
 }

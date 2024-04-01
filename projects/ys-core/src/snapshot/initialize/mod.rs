@@ -114,21 +114,11 @@ impl YuanShenClient for DotYuanShenClient {
         Ok(read_to_string(&self.dot_root.join("branch"))?)
     }
     fn set_branch(&self, new: &str) -> Result<(), YsError> {
-        let branch_path = self.dot_root.join("branch");
-        truncate_write(branch_path, new.as_bytes())?;
-        Ok(())
+        todo!()
     }
 
     fn create_branch(&self, name: &str) -> Result<ObjectID, YsError> {
-        let path = self.dot_root.join("branches").join(name);
-        if path.exists() {
-            ObjectID::read_branch(&self.dot_root, name)
-        }
-        else {
-            let snapshot_id = self.calculate_branch_id()?;
-            truncate_write(path, snapshot_id.to_string().as_bytes())?;
-            Ok(snapshot_id)
-        }
+        todo!()
     }
 }
 

@@ -2,7 +2,7 @@ use super::*;
 
 
 
-/// [YuanShenClient] in memory, all changes will disappear after the program exits, used for testing.
+/// [ObjectProxy] in memory, all changes will disappear after the program exits, used for testing.
 #[derive(Clone, Debug)]
 pub struct MemoryObjectPool {
     objects: DashMap<ObjectID, Vec<u8>>,
@@ -14,7 +14,7 @@ impl Default for MemoryObjectPool {
     }
 }
 
-impl YuanShenClient for MemoryObjectPool {
+impl ObjectProxy for MemoryObjectPool {
     async fn has(&self, id: ObjectID) -> Result<bool, YsError> {
         Ok(self.objects.contains_key(&id))
     }

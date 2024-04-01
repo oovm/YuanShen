@@ -2,15 +2,15 @@ use crate::{
     objects::{ObjectID, TextFile},
     YsError,
 };
-use std::{future::Future};
+use std::future::Future;
 use tokio::fs::File;
 
 pub trait YuanShenID {
     type Object: YuanShenObject;
 
     fn load<O>(&self, store: &O) -> impl Future<Output = Result<Self::Object, YsError>>
-        where
-            O: YuanShenClient + Send + Sync;
+    where
+        O: ObjectProxy + Send + Sync;
 }
 
 pub trait YuanShenObject {
@@ -18,13 +18,13 @@ pub trait YuanShenObject {
 }
 
 /// An object proxy that specifies various capabilities
-pub trait YuanShenClient {
+pub trait ObjectProxy {
     /// Check if a given object exists
     ///
     /// ## Examples
     ///
     /// ```
-    /// # use ys_core::{async_test, YuanShenClient, YuanShenObject, storage::{MemoryObjectPool}};
+    /// # use ys_core::{async_test, ObjectProxy, YuanShenObject, storage::{MemoryObjectPool}};
     /// # async_test(async {
     /// let client = MemoryObjectPool::default();
     /// let id = client.put_string("Wo chao! Yuan!").await?;
@@ -41,7 +41,7 @@ pub trait YuanShenClient {
     /// ## Examples
     ///
     /// ```
-    /// # use ys_core::{async_test, YuanShenClient, storage::{MemoryObjectPool}};
+    /// # use ys_core::{async_test, ObjectProxy, storage::{MemoryObjectPool}};
     /// # async_test(async {
     /// let client = MemoryObjectPool::default();
     /// let id = client.put_string("Wo chao! Yuan!").await?;
@@ -49,7 +49,7 @@ pub trait YuanShenClient {
     /// # Ok(())
     /// # })
     /// ```
-    fn get_string(&self, text: TextFile) -> impl Future<Output=Result<String, YsError>> + Send;
+    fn get_string(&self, text: TextFile) -> impl Future<Output = Result<String, YsError>> + Send;
 
     /// Try to get the string in TextFile
     fn get_string_file(&self, text: TextFile, file: &mut File) -> impl Future<Output = Result<(), YsError>> + Send;
@@ -59,7 +59,7 @@ pub trait YuanShenClient {
     /// ## Examples
     ///
     /// ```
-    /// # use ys_core::{async_test, YuanShenClient, storage::{MemoryObjectPool}};
+    /// # use ys_core::{async_test, ObjectProxy, storage::{MemoryObjectPool}};
     /// # async_test(async {
     /// let client = MemoryObjectPool::default();
     /// let id = client.put_string("Wo chao! Yuan!").await?;
@@ -77,7 +77,7 @@ pub trait YuanShenClient {
     /// ## Examples
     ///
     /// ```
-    /// # use ys_core::{async_test, YuanShenClient, storage::{MemoryObjectPool}};
+    /// # use ys_core::{async_test, ObjectProxy, storage::{MemoryObjectPool}};
     /// # async_test(async {
     /// let client = MemoryObjectPool::default();
     /// let id = client.put_string("Wo chao! Yuan!").await?;
@@ -95,7 +95,7 @@ pub trait YuanShenClient {
     /// ## Examples
     ///
     /// ```
-    /// # use ys_core::{async_test, YuanShenClient, storage::{MemoryObjectPool}};
+    /// # use ys_core::{async_test, ObjectProxy, storage::{MemoryObjectPool}};
     /// # async_test(async {
     /// let client = MemoryObjectPool::default();
     /// let id = client.put_string("Wo chao! Yuan!").await?;
@@ -107,4 +107,13 @@ pub trait YuanShenClient {
 
     /// Try to put the string in TextFile
     fn put_buffer_file(&self, file: &mut File) -> impl Future<Output = Result<TextFile, YsError>> + Send;
+}
+
+pub trait BranchProxy {
+    fn current(&self) -> impl Future<Output = Result<String, YsError>> + Send;
+    
+    fn has_branch(&self, branch: &str) -> impl Future<Output = Result<bool, YsError>> + Send;
+    
+    fn get_branch(&self, branch: &str) -> impl Future<Output = Result<ObjectID, YsError>> + Send;
+    fn set_branch(&self, branch: &str) -> impl Future<Output = Result<(), YsError>> + Send;
 }

@@ -5,7 +5,7 @@ use serde::{ser::SerializeMap, Deserialize, Deserializer, Serialize, Serializer}
 use crate::{
     objects::{IgnoreRules, ObjectID, TextFile, },
     traits::YuanShenObject,
-    YsError, YuanShenClient,
+    YsError, ObjectProxy,
 };
 use crate::objects::{ TextIncrementalFile};
 
@@ -89,7 +89,7 @@ impl SnapShotTree {
     /// Write out the directory structure at the given directory path.
     ///
     /// The target directory must already exist.
-    pub async fn write<Store: YuanShenClient>(&self, store: &Store, path: &Path) -> Result<(), YsError> {
+    pub async fn write<Store: ObjectProxy>(&self, store: &Store, path: &Path) -> Result<(), YsError> {
         todo!();
         // if read_dir(path).is_ok() {
         //     for (file_name, entry) in self.root.iter() {
@@ -110,7 +110,7 @@ impl SnapShotTree {
 }
 
 impl SnapShotTree {
-    pub fn new<Store: YuanShenClient>(dir: &Path, ignores: &IgnoreRules, store: &mut Store) -> Result<Self, YsError> {
+    pub fn new<Store: ObjectProxy>(dir: &Path, ignores: &IgnoreRules, store: &mut Store) -> Result<Self, YsError> {
         todo!();
         // let mut root = BTreeMap::new();
         // for f in std::fs::read_dir(dir)? {
