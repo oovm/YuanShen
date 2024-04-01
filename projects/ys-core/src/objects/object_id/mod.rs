@@ -1,25 +1,22 @@
-use std::hash::{Hash, Hasher};
 use super::*;
-use crate::{
-
-    utils::{read_json, write_json, WriteHashID},
-};
+use crate::utils::{read_json, write_json, WriteHashID};
+use std::hash::{Hash, Hasher};
 
 mod convert;
 #[cfg(test)]
 mod tests;
 
+mod hasher;
 
 /// 256 位对象 ID
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct ObjectID {
-   pub(crate) hash256: blake3::Hash,
+    pub(crate) hash256: blake3::Hash,
 }
 
-impl Hash for ObjectID {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.hash256.hash(state)
-    }
+#[derive(Default)]
+pub struct ObjectHasher {
+    wrapper: blake3::Hasher,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

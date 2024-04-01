@@ -7,9 +7,9 @@ use std::{
     fs::File,
     io::Write,
     path::{Path, PathBuf},
-    process::Output,
 };
-use tokio::runtime;
+
+mod hasher;
 
 pub trait WriteHashID {
     fn write_hash_id(&self, f: &mut Formatter<'_>) -> std::fmt::Result;
@@ -29,6 +29,13 @@ where
     A: for<'de> Deserialize<'de>,
 {
     Ok(serde_json::from_reader(File::options().read(true).open(path)?)?)
+}
+
+pub fn from_json<A>(bytes: &[u8]) -> Result<A, YsError>
+where
+    A: for<'de> Deserialize<'de>,
+{
+    Ok(serde_json::from_slice(bytes)?)
 }
 
 pub fn write_json<A>(thing: &A, path: &Path) -> Result<(), YsError>
@@ -67,13 +74,11 @@ pub fn truncate_write(path: PathBuf, bytes: &[u8]) -> Result<usize, YsError> {
     }
 }
 
-
 /// Create a test environment which returns the [Result<()>]
 pub fn async_test<F>(future: F)
-    where
-        F: std::future::Future<Output = std::result::Result<(), YsError>>,
+where
+    F: std::future::Future<Output = Result<(), YsError>>,
 {
     let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
     rt.block_on(async { future.await.unwrap() })
 }
-

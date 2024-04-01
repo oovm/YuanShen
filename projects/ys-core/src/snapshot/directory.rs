@@ -3,11 +3,10 @@ use std::{collections::BTreeMap, path::Path};
 use serde::{ser::SerializeMap, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
-    objects::{IgnoreRules, ObjectID, StandaloneTextFile, TextIncrementalInfo},
+    objects::{IgnoreRules, ObjectID, StandaloneText, },
     traits::YuanShenObject,
     YsError, YuanShenClient,
 };
-use crate::objects::IncrementalTextFile;
 
 /// A directory tree, with [`ObjectID`]s at the leaves.
 #[derive(PartialEq, Eq, Debug, Clone, Default)]
@@ -40,8 +39,7 @@ impl<'de> Deserialize<'de> for SnapShotTree {
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum DirectoryEntry {
     Directory(DirectoryObject),
-    StandaloneText(StandaloneTextFile),
-    IncrementalText(IncrementalTextFile),
+    Text(StandaloneText),
     /// A reference to other snapshots.
     Subtree(SubTreeObject),
 }

@@ -1,36 +1,77 @@
 use super::*;
-use crate::DirectoryEntry;
+use crate::{DirectoryEntry, YuanShenObject};
+use serde::Deserialize;
+use std::future::Future;
 use tokio::fs::File;
+
+pub trait YuanShenID {
+    type Object: YuanShenObject;
+
+    fn load<O>(&self, store: &O) -> impl Future<Output = Result<Self::Object, YsError>> 
+    where
+        O: YuanShenClient + Send + Sync;
+}
 
 /// A raw text file
 /// A pointer to the string in [YuanShenClient]
 ///
 /// Text must hash by [BLAKE3](https://blake3.io/)
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct StandaloneTextFile {
-    /// Associated with a [String] type
-    pub string_id: ObjectID,
+pub struct StandaloneText {
+    /// Associated with a [IncrementalTextFile] type
+    pub file_id: ObjectID,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+impl YuanShenID for StandaloneText {
+    type Object = String;
+
+    async fn load<O>(&self, store: &O) -> Result<String, YsError>
+    where
+        O: YuanShenClient,
+    {
+        store.get_string(*self).await
+    }
+}
+
+pub struct TextIncremental {
+    pub data_id: ObjectID,
+}
+
+impl YuanShenID for TextIncremental {
+    type Object = IncrementalTextFile;
+
+    async fn load<O>(&self, store: &O) -> Result<Self::Object, YsError>
+    where
+        O: YuanShenClient,
+    {
+        todo!()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IncrementalTextFile {
-    pub incremental_id: ObjectID,
+    /// The old file reference
+    base: ObjectID,
+    /// The edits
+    edits: Vec<TextEdit>,
 }
 
-/// A incremental text file
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TextIncrementalInfo {
-    /// The old reference
-    pub base: DirectoryEntry,
-    /// The edits
-    pub edits: Vec<TextEdit>,
+impl YuanShenObject for IncrementalTextFile {
+    fn object_id(&self) -> ObjectID {
+        let mut hasher = blake3::Hasher::default();
+        hasher.update(self.base.hash256.as_bytes());
+        for _ in &self.edits {
+            // hasher.update(&edit.hash256.as_bytes());
+        }
+        hasher.finalize().into()
+    }
 }
 
 /// The text edit information
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TextEdit {}
 
-impl StandaloneTextFile {
+impl StandaloneText {
     /// Read the text file from [YuanShenClient]
     pub async fn read<O>(&self, store: &O) -> Result<String, YsError>
     where
@@ -65,41 +106,27 @@ impl StandaloneTextFile {
 }
 
 impl IncrementalTextFile {
-    /// Read the text file from [YuanShenClient]
-    pub async fn read<O>(&self, store: &O) -> Result<TextIncrementalInfo, YsError>
-    where
-        O: YuanShenClient,
-    {
-        todo!()
-    }
-}
-
-impl TextIncrementalInfo {
-    pub async fn resolve<O>(&self, store: &O) -> Result<String, YsError>
-    where
-        O: YuanShenClient,
-    {
-        self.apply(self.base.read_string(store).await?)
-    }
-    pub fn apply(&self, text: String) -> Result<String, YsError> {
-        todo!("{text}")
-    }
-}
-
-impl DirectoryEntry {
-    pub async fn read_string<O>(&self, store: &O) -> Result<String, YsError>
+    /// Resolve the text data
+    pub async fn resolve<O>(self, store: &O) -> Result<String, YsError>
     where
         O: YuanShenClient,
     {
         match self {
-            Self::Directory(_) => {
-                panic!()
-            }
-            Self::StandaloneText(v) => v.read(store).await,
-            Self::IncrementalText(v) => v.read(store).await?.resolve(store).await,
-            Self::Subtree(_) => {
-                panic!()
+            Self::Standalone { text } => Ok(text),
+            Self::Incremental { base, edits } => {
+                let mut base = store.get_string(base).await?;
+                for edit in edits {
+                    edit.apply(&mut base)?
+                }
+                Ok(base)
             }
         }
+    }
+}
+
+impl TextEdit {
+    /// Read the text file from [YuanShenClient]
+    pub fn apply(self, text: &mut String) -> Result<(), YsError> {
+        todo!("{text}")
     }
 }

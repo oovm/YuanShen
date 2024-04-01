@@ -1,4 +1,5 @@
-use std::path::PathBuf;
+use std::future::Future;
+use std::pin::Pin;
 use super::*;
 
 
@@ -31,6 +32,14 @@ impl YuanShenClient for LocalDotYuanShen {
         Ok(std::fs::try_exists(path)?)
     }
 
+    fn get_string(&self, _: StandaloneText) -> Pin<Box<dyn Future<Output=Result<String, YsError>> + Send>> {
+        todo!()
+    }
+
+
+    async fn get_string_file(&self, _: StandaloneText, _: File) -> Result<File, YsError> {
+        todo!()
+    }
     // async fn get(&self, id: ObjectID) -> Result<Vec<u8>, YsError> {
     //     tracing::trace!("怎在 {} 中读取 {:?}", id, self.root);
     //     let s: String = format!("{}", id);
@@ -43,55 +52,51 @@ impl YuanShenClient for LocalDotYuanShen {
     //     Ok(v)
     // }
 
-    // async fn put(&mut self, id: ObjectID, object: &[u8]) -> Result<ObjectID, YsError> {
-    //     tracing::trace!("正在插入 {} 到 {:?}", id, self.root);
-    //     let s: String = format!("{}", id);
-    //     let sub: &str = &s[0..HASH_HEADER_LENGTH];
-    //     let filename: &str = &s[HASH_HEADER_LENGTH..];
-    //     let subdir_path = self.root.join(format!("{}", sub));
-    //     let path = subdir_path.join(format!("{}", filename));
-    //     if std::fs::try_exists(&path)? {
-    //         tracing::info!("{:?} already exists", path);
-    //         return Ok(id);
-    //     }
-    //     if !std::fs::try_exists(&subdir_path)? {
-    //         tracing::info!("creating subdir path {:?} in {:?}", subdir_path, self.root);
-    //         std::fs::create_dir(&subdir_path)?;
-    //     }
-    //     let mut f = File::options().create(true).write(true).open(path)?;
-    //     f.write(&object)?;
-    //     Ok(id)
-    // }
 
-    async fn get_string(&self, text: StandaloneTextFile) -> Result<String, YsError> {
+
+    async fn put_string(&self, _: &str) -> Result<StandaloneText, YsError> {
         todo!()
     }
 
-    async fn get_string_file(&self, text: StandaloneTextFile, file: &mut tokio::fs::File) -> Result<(), YsError> {
+    async fn put_string_file(&self, _: &mut tokio::fs::File) -> Result<StandaloneText, YsError> {
         todo!()
     }
 
-    async fn put_string(&self, text: &str) -> Result<StandaloneTextFile, YsError> {
+    async fn get_buffer(&self, _: StandaloneText) -> Result<String, YsError> {
         todo!()
     }
 
-    async fn put_string_file(&self, file: &mut tokio::fs::File) -> Result<StandaloneTextFile, YsError> {
+    async fn get_buffer_file(&self, _: StandaloneText, _: &mut File) -> Result<(), YsError> {
         todo!()
     }
 
-    async fn get_buffer(&self, text: StandaloneTextFile) -> Result<String, YsError> {
+    async fn put_buffer(&self, _: &str) -> Result<StandaloneText, YsError> {
         todo!()
     }
 
-    async fn get_buffer_file(&self, text: StandaloneTextFile, file: &mut File) -> Result<(), YsError> {
+    async fn put_buffer_file(&self, _: &mut File) -> Result<StandaloneText, YsError> {
         todo!()
     }
+}
 
-    async fn put_buffer(&self, text: &str) -> Result<StandaloneTextFile, YsError> {
-        todo!()
-    }
-
-    async fn put_buffer_file(&self, file: &mut File) -> Result<StandaloneTextFile, YsError> {
-        todo!()
+impl LocalDotYuanShen {
+    async fn put(&self, id: ObjectID, object: &[u8]) -> Result<ObjectID, YsError> {
+        tracing::trace!("正在插入 {} 到 {:?}", id, self.root);
+        let s: String = format!("{}", id);
+        let sub: &str = &s[0..HASH_HEADER_LENGTH];
+        let filename: &str = &s[HASH_HEADER_LENGTH..];
+        let subdir_path = self.root.join(format!("{}", sub));
+        let path = subdir_path.join(format!("{}", filename));
+        if std::fs::try_exists(&path)? {
+            tracing::info!("{:?} already exists", path);
+            return Ok(id);
+        }
+        if !std::fs::try_exists(&subdir_path)? {
+            tracing::info!("creating subdir path {:?} in {:?}", subdir_path, self.root);
+            std::fs::create_dir(&subdir_path)?;
+        }
+        let mut f = File::options().create(true).write(true).open(path).await?;
+        f.write(&object).await?;
+        Ok(id)
     }
 }

@@ -1,8 +1,8 @@
 use crate::{
-    objects::{ObjectID, StandaloneTextFile},
+    objects::{ObjectID, StandaloneText},
     YsError,
 };
-use std::future::Future;
+use std::{future::Future, pin::Pin};
 use tokio::fs::File;
 
 pub trait YuanShenObject {
@@ -21,7 +21,7 @@ pub trait YuanShenClient {
     /// let client = MemoryObjectPool::default();
     /// let id = client.put_string("Wo chao! Yuan!").await?;
     /// let invalid = ".ys".object_id();
-    /// assert!(client.has(id.string_id).await?);
+    /// assert!(client.has(id.file_id).await?);
     /// assert!(!client.has(invalid).await?);
     /// # Ok(())
     /// # })
@@ -41,10 +41,10 @@ pub trait YuanShenClient {
     /// # Ok(())
     /// # })
     /// ```
-    fn get_string(&self, text: StandaloneTextFile) -> impl Future<Output = Result<String, YsError>> + Send;
-    
+    fn get_string<'a>(&'a self, text: StandaloneText) -> Pin<Box<dyn Future<Output = Result<String, YsError>> + Send + 'a>>;
+
     /// Try to get the string in TextFile
-    fn get_string_file(&self, text: StandaloneTextFile, file: &mut File) -> impl Future<Output = Result<(), YsError>> + Send;
+    fn get_string_file(&self, text: StandaloneText, file: File) -> impl Future<Output = Result<File, YsError>> + Send;
 
     /// Try to put the string in TextFile
     ///
@@ -59,11 +59,10 @@ pub trait YuanShenClient {
     /// # Ok(())
     /// # })
     /// ```
-    fn put_string(&self, text: &str) -> impl Future<Output = Result<StandaloneTextFile, YsError>> + Send;
+    fn put_string(&self, text: &str) -> impl Future<Output = Result<StandaloneText, YsError>> + Send;
 
     /// Try to put the string in TextFile
-    fn put_string_file(&self, file: &mut File) -> impl Future<Output = Result<StandaloneTextFile, YsError>> + Send;
-
+    fn put_string_file(&self, file: &mut File) -> impl Future<Output = Result<StandaloneText, YsError>> + Send;
 
     /// Try to get the string in TextFile
     ///
@@ -78,10 +77,10 @@ pub trait YuanShenClient {
     /// # Ok(())
     /// # })
     /// ```
-    fn get_buffer(&self, text: StandaloneTextFile) -> impl Future<Output = Result<String, YsError>> + Send;
+    fn get_buffer(&self, text: StandaloneText) -> impl Future<Output = Result<String, YsError>> + Send;
 
     /// Try to get the string in TextFile
-    fn get_buffer_file(&self, text: StandaloneTextFile, file: &mut File) -> impl Future<Output = Result<(), YsError>> + Send;
+    fn get_buffer_file(&self, text: StandaloneText, file: &mut File) -> impl Future<Output = Result<(), YsError>> + Send;
 
     /// Try to put the string in TextFile
     ///
@@ -96,12 +95,8 @@ pub trait YuanShenClient {
     /// # Ok(())
     /// # })
     /// ```
-    fn put_buffer(&self, text: &str) -> impl Future<Output = Result<StandaloneTextFile, YsError>> + Send;
+    fn put_buffer(&self, text: &str) -> impl Future<Output = Result<StandaloneText, YsError>> + Send;
 
     /// Try to put the string in TextFile
-    fn put_buffer_file(&self, file: &mut File) -> impl Future<Output = Result<StandaloneTextFile, YsError>> + Send;
-
-    
-    
-    
+    fn put_buffer_file(&self, file: &mut File) -> impl Future<Output = Result<StandaloneText, YsError>> + Send;
 }

@@ -8,14 +8,14 @@ use core::{
     str::FromStr,
 };
 pub use ignore_rules::IgnoreRules;
-pub use object_id::{BranchJson, ObjectID};
+pub use object_id::{BranchJson, ObjectID, ObjectHasher};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     borrow::Cow,
     io::Read,
-    path::{Path, PathBuf},
+    path::{Path, },
 };
-pub use text_file::{TextEdit, StandaloneTextFile, TextIncrementalInfo, IncrementalTextFile};
+pub use text_file::{TextEdit, StandaloneText, IncrementalTextFile};
 
 mod author_id;
 mod binary_file;

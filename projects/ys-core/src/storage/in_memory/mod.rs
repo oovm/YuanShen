@@ -1,10 +1,6 @@
 use super::*;
-use crate::{
-    objects::{ObjectID, StandaloneTextFile},
-    YuanShenClient,
-};
-use dashmap::DashMap;
-use tokio::io::AsyncReadExt;
+use crate::{objects::IncrementalTextFile, utils::{from_json}, YuanShenObject};
+use std::{future::Future, pin::Pin};
 
 /// [YuanShenClient] in memory, all changes will disappear after the program exits, used for testing.
 #[derive(Clone, Debug)]
@@ -18,52 +14,62 @@ impl Default for MemoryObjectPool {
     }
 }
 
-impl MemoryObjectPool {}
+
 
 impl YuanShenClient for MemoryObjectPool {
     async fn has(&self, id: ObjectID) -> Result<bool, YsError> {
         Ok(self.objects.contains_key(&id))
     }
 
-    async fn get_string(&self, text: StandaloneTextFile) -> Result<String, YsError> {
-        match self.objects.get(&text.string_id) {
-            Some(o) => Ok(String::from_utf8(o.to_vec())?),
-            None => Err(YsErrorKind::MissingObject { id: text.string_id })?,
-        }
+    fn get_string<'a>(&'a self, text: StandaloneText) -> Pin<Box<dyn Future<Output = Result<String, YsError>> + Send + 'a>> {
+        Box::pin(async move {
+            let data = self.get_text_data(text.file_id)?;
+            data.resolve(self).await
+        })
     }
 
-    async fn get_string_file(&self, text: StandaloneTextFile, file: &mut File) -> Result<(), YsError> {
+    async fn get_string_file(&self, text: StandaloneText, mut file: File) -> Result<File, YsError> {
         let string = self.get_string(text).await?;
-        Ok(file.write_all(string.as_bytes()).await?)
+        file.write_all(string.as_bytes()).await?;
+        Ok(file)
     }
 
-    async fn put_string(&self, text: &str) -> Result<StandaloneTextFile, YsError> {
-        let id = ObjectID { hash256: blake3::hash(text.as_bytes()) };
+    async fn put_string(&self, text: &str) -> Result<StandaloneText, YsError> {
+        let id = text.as_bytes().object_id();
         self.objects.insert(id, text.as_bytes().to_vec());
-        Ok(StandaloneTextFile { string_id: id })
+        Ok(StandaloneText { file_id: id })
     }
 
-    async fn put_string_file(&self, file: &mut File) -> Result<StandaloneTextFile, YsError> {
+    async fn put_string_file(&self, file: &mut File) -> Result<StandaloneText, YsError> {
         let mut buffer = String::new();
         let _ = file.read_to_string(&mut buffer).await?;
-        let id = ObjectID { hash256: blake3::hash(buffer.as_bytes()) };
+        let id = buffer.as_bytes().object_id();
         self.objects.insert(id, buffer.as_bytes().to_vec());
-        Ok(StandaloneTextFile { string_id: id })
+        Ok(StandaloneText { file_id: id })
     }
 
-    async fn get_buffer(&self, text: StandaloneTextFile) -> Result<String, YsError> {
+    async fn get_buffer(&self, text: StandaloneText) -> Result<String, YsError> {
         todo!()
     }
 
-    async fn get_buffer_file(&self, text: StandaloneTextFile, file: &mut File) -> Result<(), YsError> {
+    async fn get_buffer_file(&self, text: StandaloneText, file: &mut File) -> Result<(), YsError> {
         todo!()
     }
 
-    async fn put_buffer(&self, text: &str) -> Result<StandaloneTextFile, YsError> {
+    async fn put_buffer(&self, text: &str) -> Result<StandaloneText, YsError> {
         todo!()
     }
 
-    async fn put_buffer_file(&self, file: &mut File) -> Result<StandaloneTextFile, YsError> {
+    async fn put_buffer_file(&self, file: &mut File) -> Result<StandaloneText, YsError> {
         todo!()
+    }
+}
+
+impl MemoryObjectPool {
+    fn get_text_data(&self, id: ObjectID) -> Result<IncrementalTextFile, YsError> {
+        Ok(match self.objects.get(&id) {
+            Some(o) => from_json(o.as_slice())?,
+            None => Err(YsErrorKind::MissingObject { id })?,
+        })
     }
 }
