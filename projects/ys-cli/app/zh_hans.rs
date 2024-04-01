@@ -18,29 +18,18 @@ struct YuanShen {
 
 #[derive(Debug)]
 enum YsCommand {
-    /// 创建一个新的源神世界
     Initialize(YuanShenInitialize),
-    /// 观测目标世界线与当前世界的差异
     Difference(YuanShenDifference),
-
     Changes,
-
     Commit(YuanShenCommit),
-    /// 将观测结果合并到当前世界线
     Squash(YuanShenSquash),
-    /// 设定世界线收束节点
     Merge(YuanShenMerge),
-    /// 干涉目标世界线
     Rebase(YuanShenRebase),
-    /// 回溯到任意固化节点
-    Reverse(YuanShenCommit),
-    /// 从某一条世界线开始开启一个新世界
+    Reset(YuanShenReset),
     Orphan(YuanShenOrphan),
-    /// 切换到指定名称的世界线
     Checkout(YuanShenCheckout),
     Branch(YuanShenBranch),
     Stash(YuanShenCommit),
-    /// 对象有点太城市化了
     GarbageCollect,
     External(Vec<String>),
 }
@@ -60,7 +49,7 @@ impl FromArgMatches for YsCommand {
                     "squash" | "塌缩" => Self::Squash(FromArgMatches::from_arg_matches_mut(sub_args)?),
                     "merge" | "收束" => Self::Merge(FromArgMatches::from_arg_matches_mut(sub_args)?),
                     "rebase" | "干涉" => Self::Rebase(FromArgMatches::from_arg_matches_mut(sub_args)?),
-                    "reverse" | "回溯" => Self::Reverse(FromArgMatches::from_arg_matches_mut(sub_args)?),
+                    "reverse" | "回溯" => Self::Reset(FromArgMatches::from_arg_matches_mut(sub_args)?),
                     "checkout" | "跃迁" => Self::Checkout(FromArgMatches::from_arg_matches_mut(sub_args)?),
                     "branch" => Self::Branch(FromArgMatches::from_arg_matches_mut(sub_args)?),
                     "stash" => Self::Stash(FromArgMatches::from_arg_matches_mut(sub_args)?),
@@ -122,7 +111,7 @@ impl FromArgMatches for YsCommand {
                     let __clap_arg_matches = &mut __clap_arg_sub_matches;
                     FromArgMatches::update_from_arg_matches_mut(__clap_arg, __clap_arg_matches)?
                 }
-                Self::Reverse(ref mut __clap_arg) if "reverse" == clap => {
+                Self::Reset(ref mut __clap_arg) if "reverse" == clap => {
                     let (_, mut __clap_arg_sub_matches) = args.remove_subcommand().unwrap();
                     let __clap_arg_matches = &mut __clap_arg_sub_matches;
                     FromArgMatches::update_from_arg_matches_mut(__clap_arg, __clap_arg_matches)?
@@ -164,43 +153,41 @@ impl FromArgMatches for YsCommand {
 
 impl Subcommand for YsCommand {
     fn augment_subcommands<'b>(app: Command) -> Command {
-        app.subcommand({
+        app.subcommand(
             YuanShenInitialize::augment_args(Command::new("启动!"))
                 .about("创建一个新的源神世界")
                 .long_about(None)
                 .alias("initialize")
                 .alias("init")
-                .display_name("启动!")
-        })
-        .subcommand({
+                .display_name("启动!"),
+        )
+        .subcommand(
             YuanShenDifference::augment_args(Command::new("观测"))
                 .about("观测目标世界线与当前世界的差异")
                 .long_about(None)
-                .alias("difference")
-        })
+                .alias("difference"),
+        )
         .subcommand(Command::new("异变").alias("changes"))
         .subcommand(YuanShenCommit::augment_args(Command::new("衍化")).alias("commit"))
-        .subcommand({
+        .subcommand(
             YuanShenCommit::augment_args(Command::new("塌缩"))
                 .about("将观测结果合并到当前世界线")
                 .long_about(None)
-                .alias("squash")
-        })
-        .subcommand({
-            YuanShenMerge::augment_args(Command::new("收束")).about("设定世界线收束节点").long_about(None).alias("merge")
-        })
-        .subcommand({
-            YuanShenCommit::augment_args(Command::new("干涉")).about("干涉目标世界线").long_about(None).alias("rebase")
-        })
-        .subcommand({
-            YuanShenCommit::augment_args(Command::new("回溯")).about("回溯到任意固化节点").long_about(None).alias("reverse")
-        })
-        .subcommand({
+                .alias("squash"),
+        )
+        .subcommand(
+            YuanShenMerge::augment_args(Command::new("收束")).about("设定世界线收束节点").long_about(None).alias("merge"),
+        )
+        .subcommand(YuanShenCommit::augment_args(Command::new("干涉")).about("干涉目标世界线").long_about(None).alias("rebase"))
+        .subcommand(
+            YuanShenCommit::augment_args(Command::new("回溯")).about("回溯到任意固化节点").long_about(None).alias("reverse"),
+        )
+        .subcommand(
             YuanShenOrphan::augment_args(Command::new("退相干"))
                 .about("从某一条世界线开始开启一个新世界")
                 .long_about(None)
-                .alias("orphan")
-        })
+                .alias("orphan"),
+        )
         .subcommand({
             YuanShenCheckout::augment_args(Command::new("跃迁"))
                 .about("切换到指定名称的世界线")
@@ -209,9 +196,7 @@ impl Subcommand for YsCommand {
         })
         .subcommand(Command::new("branch"))
         .subcommand(YuanShenCommit::augment_args(Command::new("stash")))
-        .subcommand({
-            Command::new("逆化").about("这些对象有点太城市化了").long_about(None).alias("gc").alias("garbage-collect")
-        })
+        .subcommand(Command::new("逆化").about("这些对象有点太城市化了").long_about(None).alias("gc").alias("garbage-collect"))
         .external_subcommand_value_parser(_AutoValueParser::<String>::new().value_parser())
     }
 
@@ -249,7 +234,7 @@ pub async fn main() -> Result<(), YsError> {
         Squash(_) => {}
         Merge(_) => {}
         Rebase(_) => {}
-        Reverse(_) => {}
+        Reset(_) => {}
         Orphan(_) => {}
         Stash(_) => {}
         External(_) => {}

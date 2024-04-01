@@ -33,7 +33,6 @@ async fn test_local_object_store() {
 }
 
 #[test]
-#[ignore]
 fn test_diff_display() {
     let diff_empty: SnapShotDifference =
         SnapShotDifference { deleted: BTreeSet::new(), added: BTreeMap::new(), modified: BTreeMap::new() };

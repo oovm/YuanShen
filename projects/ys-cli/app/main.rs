@@ -1,5 +1,4 @@
-use clap::{Args, FromArgMatches, Parser, Subcommand};
-use clap_builder::builder::via_prelude::_ValueParserViaParse;
+use clap::{ Parser, Subcommand};
 use std::{env::current_dir, fmt::Debug, io::stdout};
 use ys_core::{
     initialize::{DotYuanShenClient, YuanShenClient},
@@ -24,7 +23,7 @@ enum YsCommand {
     Squash(YuanShenSquash),
     Merge(YuanShenMerge),
     Rebase(YuanShenRebase),
-    Reverse(YuanShenCommit),
+    Reset(YuanShenReset),
     Orphan(YuanShenOrphan),
     Checkout(YuanShenCheckout),
     Branch(YuanShenBranch),
@@ -60,7 +59,7 @@ pub async fn main() -> Result<(), YsError> {
         Squash(_) => {}
         Merge(_) => {}
         Rebase(_) => {}
-        Reverse(_) => {}
+        Reset(_) => {}
         Orphan(_) => {}
         Stash(_) => {}
         External(_) => {}
