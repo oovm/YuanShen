@@ -1,17 +1,15 @@
-use std::{
-    collections::BTreeMap,
-    fs::{read_dir, File},
-    io::{Read, Write},
-    path::{Path, PathBuf},
-};
+use std::{collections::BTreeMap, path::Path};
 
 use serde::{ser::SerializeMap, Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::{YsError, YuanShenClient};
-use crate::objects::{IgnoreRules, ObjectID, TextFile, };
-use crate::traits::YuanShenObject;
+use crate::{
+    objects::{IgnoreRules, ObjectID, StandaloneTextFile, TextIncrementalInfo},
+    traits::YuanShenObject,
+    YsError, YuanShenClient,
+};
+use crate::objects::IncrementalTextFile;
 
-// A directory tree, with [`ObjectID`]s at the leaves.
+/// A directory tree, with [`ObjectID`]s at the leaves.
 #[derive(PartialEq, Eq, Debug, Clone, Default)]
 pub struct SnapShotTree {
     pub root: BTreeMap<String, DirectoryEntry>,
@@ -42,16 +40,21 @@ impl<'de> Deserialize<'de> for SnapShotTree {
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum DirectoryEntry {
     Directory(DirectoryObject),
-    Text(TextFile),
+    StandaloneText(StandaloneTextFile),
+    IncrementalText(IncrementalTextFile),
     /// A reference to other snapshots.
     Subtree(SubTreeObject),
 }
 
 impl Serialize for DirectoryEntry {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
         todo!()
     }
 }
+
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct DirectoryObject {
     entries: BTreeMap<String, DirectoryEntry>,
@@ -59,8 +62,8 @@ pub struct DirectoryObject {
 
 impl Serialize for DirectoryObject {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         let mut map = serializer.serialize_map(Some(self.entries.len()))?;
         for (name, entry) in self.entries.iter() {
@@ -72,13 +75,12 @@ impl Serialize for DirectoryObject {
 
 impl<'de> Deserialize<'de> for DirectoryObject {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         todo!()
     }
 }
-
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct SubTreeObject {

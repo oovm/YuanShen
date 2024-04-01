@@ -1,14 +1,14 @@
+use std::path::PathBuf;
 use super::*;
-use crate::{objects::text_file::TextFile, YuanShenClient};
-use std::fs::{create_dir, try_exists};
+
 
 /// 本地文件系统对象储存
 #[derive(Debug, Clone)]
-pub struct LocalObjectStore {
+pub struct LocalDotYuanShen {
     root: PathBuf,
 }
 
-impl LocalObjectStore {
+impl LocalDotYuanShen {
     /// 创建一个本地文件系统对象储存
     pub fn new(root: PathBuf) -> Result<Self, std::io::Error> {
         if !try_exists(&root)? {
@@ -21,7 +21,7 @@ impl LocalObjectStore {
 
 const HASH_HEADER_LENGTH: usize = 2;
 
-impl YuanShenClient for LocalObjectStore {
+impl YuanShenClient for LocalDotYuanShen {
     async fn has(&self, id: ObjectID) -> Result<bool, YsError> {
         tracing::trace!("检查 {} 中是否存在 {:?}", id, self.root);
         let s: String = format!("{}", id);
@@ -63,19 +63,35 @@ impl YuanShenClient for LocalObjectStore {
     //     Ok(id)
     // }
 
-    async fn get_string(&self, text: TextFile) -> Result<String, YsError> {
+    async fn get_string(&self, text: StandaloneTextFile) -> Result<String, YsError> {
         todo!()
     }
 
-    async fn get_string_file(&self, text: TextFile, file: &mut tokio::fs::File) -> Result<(), YsError> {
+    async fn get_string_file(&self, text: StandaloneTextFile, file: &mut tokio::fs::File) -> Result<(), YsError> {
         todo!()
     }
 
-    async fn put_string(&self, text: &str) -> Result<TextFile, YsError> {
+    async fn put_string(&self, text: &str) -> Result<StandaloneTextFile, YsError> {
         todo!()
     }
 
-    async fn put_string_file(&self, file: &mut tokio::fs::File) -> Result<TextFile, YsError> {
+    async fn put_string_file(&self, file: &mut tokio::fs::File) -> Result<StandaloneTextFile, YsError> {
+        todo!()
+    }
+
+    async fn get_buffer(&self, text: StandaloneTextFile) -> Result<String, YsError> {
+        todo!()
+    }
+
+    async fn get_buffer_file(&self, text: StandaloneTextFile, file: &mut File) -> Result<(), YsError> {
+        todo!()
+    }
+
+    async fn put_buffer(&self, text: &str) -> Result<StandaloneTextFile, YsError> {
+        todo!()
+    }
+
+    async fn put_buffer_file(&self, file: &mut File) -> Result<StandaloneTextFile, YsError> {
         todo!()
     }
 }

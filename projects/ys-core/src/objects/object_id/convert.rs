@@ -1,9 +1,15 @@
-use crate::traits::YuanShenObject;
 use super::*;
+use crate::traits::YuanShenObject;
 
 impl From<blake3::Hash> for ObjectID {
     fn from(value: blake3::Hash) -> Self {
         Self { hash256: value }
+    }
+}
+
+impl<T: YuanShenObject> From<T> for ObjectID {
+    fn from(value: T) -> Self {
+        value.object_id()
     }
 }
 
@@ -17,26 +23,24 @@ impl<'a> YuanShenObject for &'a str {
         ObjectID { hash256: blake3::hash(self.as_bytes()) }
     }
 }
-
-impl From<&Vec<u8>> for ObjectID {
-    fn from(vec: &Vec<u8>) -> Self {
-        ObjectID { hash256: blake3::hash(&vec) }
+impl YuanShenObject for Vec<u8> {
+    fn object_id(&self) -> ObjectID {
+        ObjectID { hash256: blake3::hash(self) }
+    }
+}
+impl<'a> YuanShenObject for &'a [u8] {
+    fn object_id(&self) -> ObjectID {
+        ObjectID { hash256: blake3::hash(self) }
     }
 }
 
-impl From<&[u8]> for ObjectID {
-    fn from(bytes: &[u8]) -> Self {
-        ObjectID { hash256: blake3::hash(&bytes) }
-    }
-}
-
-impl TryFrom<File> for ObjectID {
+impl TryFrom<std::fs::File> for ObjectID {
     type Error = std::io::Error;
 
-    fn try_from(mut f: File) -> Result<Self, Self::Error> {
+    fn try_from(mut f: std::fs::File) -> Result<Self, Self::Error> {
         let mut vec = Vec::new();
         f.read_to_end(&mut vec)?;
-        Ok((&vec).into())
+        Ok((&vec).object_id())
     }
 }
 
@@ -44,7 +48,7 @@ impl<'a> TryFrom<&Path> for ObjectID {
     type Error = std::io::Error;
 
     fn try_from(p: &Path) -> Result<Self, Self::Error> {
-        ObjectID::try_from(File::options().read(true).open(p)?)
+        ObjectID::try_from(std::fs::File::options().read(true).open(p)?)
     }
 }
 

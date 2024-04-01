@@ -1,9 +1,6 @@
+use crate::storage::LocalDotYuanShen;
 use super::*;
-use crate::{
-    utils::{read_json, truncate_write, write_json},
-    YsErrorKind,
-};
-use crate::objects::{IgnoreRules, LocalObjectStore, ObjectID};
+
 
 /// `.ys` 文件夹
 #[derive(Debug)]
@@ -31,7 +28,7 @@ impl InitializeConfig {
         self.generate_branches()?;
         self.generate_configs()?;
         // 创建初始提交
-        let mut store = LocalObjectStore::new(self.join("store"))?;
+        let mut store = LocalDotYuanShen::new(self.join("store"))?;
         let directory = SnapShotTree::default();
         // let directory = store.put_typed(&directory).await?;
         // let snapshot = Commit {
@@ -145,8 +142,8 @@ impl DotYuanShenClient {
         Ok(try_exists(self.dot_root.join("branches").join(&branch))?)
     }
 
-    pub fn store(&self) -> Result<LocalObjectStore, YsError> {
-        Ok(LocalObjectStore::new(self.dot_root.clone())?)
+    pub fn store(&self) -> Result<LocalDotYuanShen, YsError> {
+        Ok(LocalDotYuanShen::new(self.dot_root.clone())?)
     }
 
     pub fn ignores(&self) -> Result<IgnoreRules, YsError> {
