@@ -1,6 +1,9 @@
 use super::*;
 use crate::utils::{read_json, write_json, WriteHashID};
-use std::hash::{Hash, Hasher};
+use std::{
+    fmt::Formatter,
+    hash::{Hash, Hasher},
+};
 
 mod convert;
 #[cfg(test)]
@@ -18,6 +21,8 @@ pub struct ObjectID {
 pub struct ObjectHasher {
     wrapper: blake3::Hasher,
 }
+
+
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]

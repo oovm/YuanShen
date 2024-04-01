@@ -1,5 +1,3 @@
-use std::future::Future;
-use std::pin::Pin;
 use super::*;
 
 
@@ -32,14 +30,14 @@ impl YuanShenClient for LocalDotYuanShen {
         Ok(std::fs::try_exists(path)?)
     }
 
-    fn get_string(&self, _: StandaloneText) -> Pin<Box<dyn Future<Output=Result<String, YsError>> + Send>> {
+    async fn get_string(&self, _: TextFile) -> Result<String, YsError> {
         todo!()
     }
 
-
-    async fn get_string_file(&self, _: StandaloneText, _: File) -> Result<File, YsError> {
+    async fn get_string_file(&self, _: TextFile, _: &mut File) -> Result<(), YsError> {
         todo!()
     }
+
     // async fn get(&self, id: ObjectID) -> Result<Vec<u8>, YsError> {
     //     tracing::trace!("怎在 {} 中读取 {:?}", id, self.root);
     //     let s: String = format!("{}", id);
@@ -52,29 +50,27 @@ impl YuanShenClient for LocalDotYuanShen {
     //     Ok(v)
     // }
 
-
-
-    async fn put_string(&self, _: &str) -> Result<StandaloneText, YsError> {
+    async fn put_string(&self, _: &str) -> Result<TextFile, YsError> {
         todo!()
     }
 
-    async fn put_string_file(&self, _: &mut tokio::fs::File) -> Result<StandaloneText, YsError> {
+    async fn put_string_file(&self, _: &mut tokio::fs::File) -> Result<TextFile, YsError> {
         todo!()
     }
 
-    async fn get_buffer(&self, _: StandaloneText) -> Result<String, YsError> {
+    async fn get_buffer(&self, _: TextFile) -> Result<String, YsError> {
         todo!()
     }
 
-    async fn get_buffer_file(&self, _: StandaloneText, _: &mut File) -> Result<(), YsError> {
+    async fn get_buffer_file(&self, _: TextFile, _: &mut File) -> Result<(), YsError> {
         todo!()
     }
 
-    async fn put_buffer(&self, _: &str) -> Result<StandaloneText, YsError> {
+    async fn put_buffer(&self, _: &str) -> Result<TextFile, YsError> {
         todo!()
     }
 
-    async fn put_buffer_file(&self, _: &mut File) -> Result<StandaloneText, YsError> {
+    async fn put_buffer_file(&self, _: &mut File) -> Result<TextFile, YsError> {
         todo!()
     }
 }

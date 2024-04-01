@@ -1,5 +1,5 @@
 use crate::{
-    objects::{ObjectID, StandaloneText},
+    objects::{ObjectID, TextFile},
     YsError, YsErrorKind, YuanShenClient,
 };
 use dashmap::DashMap;
@@ -13,6 +13,7 @@ use tokio::{
     fs::File,
     io::{AsyncReadExt, AsyncWriteExt},
 };
+use crate::{objects::TextIncrementalData, utils::from_json, YuanShenObject};
 
 mod file_system;
 mod in_memory;

@@ -1,28 +1,30 @@
 use super::*;
-use crate::{DirectoryEntry, YuanShenObject};
-use serde::Deserialize;
-use std::future::Future;
-use tokio::fs::File;
-
-pub trait YuanShenID {
-    type Object: YuanShenObject;
-
-    fn load<O>(&self, store: &O) -> impl Future<Output = Result<Self::Object, YsError>> 
-    where
-        O: YuanShenClient + Send + Sync;
-}
+use std::hash::{Hash, Hasher};
 
 /// A raw text file
 /// A pointer to the string in [YuanShenClient]
 ///
 /// Text must hash by [BLAKE3](https://blake3.io/)
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct StandaloneText {
-    /// Associated with a [IncrementalTextFile] type
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+pub struct TextFile {
+    /// Associated with a [TextIncrementalData] type
     pub file_id: ObjectID,
 }
 
-impl YuanShenID for StandaloneText {
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+pub struct TextIncrementalFile {
+    pub data_id: ObjectID,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TextIncrementalData {
+    /// The old file reference
+    base: DirectoryEntry,
+    /// The edits
+    edits: Vec<TextEdit>,
+}
+
+impl YuanShenID for TextFile {
     type Object = String;
 
     async fn load<O>(&self, store: &O) -> Result<String, YsError>
@@ -33,12 +35,8 @@ impl YuanShenID for StandaloneText {
     }
 }
 
-pub struct TextIncremental {
-    pub data_id: ObjectID,
-}
-
-impl YuanShenID for TextIncremental {
-    type Object = IncrementalTextFile;
+impl YuanShenID for TextIncrementalFile {
+    type Object = TextIncrementalData;
 
     async fn load<O>(&self, store: &O) -> Result<Self::Object, YsError>
     where
@@ -48,30 +46,31 @@ impl YuanShenID for TextIncremental {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct IncrementalTextFile {
-    /// The old file reference
-    base: ObjectID,
-    /// The edits
-    edits: Vec<TextEdit>,
+impl Hash for TextIncrementalData {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self.base {
+            DirectoryEntry::Directory(_) => unreachable!(),
+            DirectoryEntry::TextStandalone(_) => {}
+            DirectoryEntry::TextIncremental(_) => {}
+            DirectoryEntry::Subtree(_) => unreachable!(),
+        }
+        for edit in self.edits.iter() {
+            edit.hash(state);
+        }
+    }
 }
 
-impl YuanShenObject for IncrementalTextFile {
+impl YuanShenObject for TextIncrementalData {
     fn object_id(&self) -> ObjectID {
-        let mut hasher = blake3::Hasher::default();
-        hasher.update(self.base.hash256.as_bytes());
-        for _ in &self.edits {
-            // hasher.update(&edit.hash256.as_bytes());
-        }
-        hasher.finalize().into()
+        ObjectHasher::hash(self)
     }
 }
 
 /// The text edit information
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TextEdit {}
 
-impl StandaloneText {
+impl TextFile {
     /// Read the text file from [YuanShenClient]
     pub async fn read<O>(&self, store: &O) -> Result<String, YsError>
     where
@@ -105,22 +104,23 @@ impl StandaloneText {
     }
 }
 
-impl IncrementalTextFile {
+impl TextIncrementalData {
     /// Resolve the text data
     pub async fn resolve<O>(self, store: &O) -> Result<String, YsError>
     where
         O: YuanShenClient,
     {
-        match self {
-            Self::Standalone { text } => Ok(text),
-            Self::Incremental { base, edits } => {
-                let mut base = store.get_string(base).await?;
-                for edit in edits {
-                    edit.apply(&mut base)?
-                }
-                Ok(base)
-            }
-        }
+        todo!()
+        // match self {
+        //     Self::Standalone { text } => Ok(text),
+        //     Self::Incremental { base, edits } => {
+        //         let mut base = store.get_string(base).await?;
+        //         for edit in edits {
+        //             edit.apply(&mut base)?
+        //         }
+        //         Ok(base)
+        //     }
+        // }
     }
 }
 

@@ -3,10 +3,11 @@ use std::{collections::BTreeMap, path::Path};
 use serde::{ser::SerializeMap, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
-    objects::{IgnoreRules, ObjectID, StandaloneText, },
+    objects::{IgnoreRules, ObjectID, TextFile, },
     traits::YuanShenObject,
     YsError, YuanShenClient,
 };
+use crate::objects::{ TextIncrementalFile};
 
 /// A directory tree, with [`ObjectID`]s at the leaves.
 #[derive(PartialEq, Eq, Debug, Clone, Default)]
@@ -36,22 +37,15 @@ impl<'de> Deserialize<'de> for SnapShotTree {
     }
 }
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DirectoryEntry {
     Directory(DirectoryObject),
-    Text(StandaloneText),
+    TextStandalone(TextFile),
+    TextIncremental(TextIncrementalFile),
     /// A reference to other snapshots.
     Subtree(SubTreeObject),
 }
 
-impl Serialize for DirectoryEntry {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        todo!()
-    }
-}
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct DirectoryObject {
@@ -80,7 +74,7 @@ impl<'de> Deserialize<'de> for DirectoryObject {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct SubTreeObject {
     id: ObjectID,
 }

@@ -22,6 +22,6 @@ pub use crate::{
         directory::{DirectoryEntry, SnapShotTree},
         initialize,
     },
-    traits::{YuanShenClient, YuanShenObject},
+    traits::{YuanShenClient, YuanShenObject, YuanShenID},
     utils::async_test,
 };
