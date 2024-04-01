@@ -11,6 +11,7 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
+use crate::objects::object_store::SerializableObjects;
 
 pub mod differences;
 pub mod directory;
@@ -25,6 +26,8 @@ pub struct SnapShot {
     pub previous: BTreeSet<ObjectID>,
     pub data: SnapShotData,
 }
+
+impl SerializableObjects for SnapShot {}
 
 #[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize)]
 pub struct SnapShotData {

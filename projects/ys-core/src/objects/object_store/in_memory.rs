@@ -28,9 +28,8 @@ impl ObjectStore for MemoryObjectStore {
             None => Ok(vec![]),
         }
     }
-    
-    async fn put(&mut self, object: &[u8]) -> Result<ObjectID, YsError> {
-        let id: ObjectID = object.into();
+
+    async fn put(&mut self, id: ObjectID, object: &[u8]) -> Result<ObjectID, YsError> {
         match self.btree.entry(id) {
             // id 不存在, 插入新对象
             Entry::Vacant(v) => {

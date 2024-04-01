@@ -15,5 +15,4 @@ pub struct YuanShenReset {
     merge: bool,
     #[arg(long)]
     keep: bool,
-
 }

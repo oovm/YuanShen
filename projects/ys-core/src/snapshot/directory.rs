@@ -7,8 +7,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::{IgnoreRules, ObjectID, ObjectStore, YsError};
-
+use crate::{objects::object_store::SerializableObjects, IgnoreRules, ObjectID, ObjectStore, YsError};
 
 /// A directory tree, with [`ObjectID`]s at the leaves.
 #[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize, Default)]
@@ -16,6 +15,8 @@ pub struct SnapShotDirectory {
     #[serde(flatten)]
     pub root: BTreeMap<String, DirectoryEntry>,
 }
+
+impl SerializableObjects for SnapShotDirectory {}
 
 
 
@@ -49,7 +50,7 @@ pub enum DirectoryEntry {
 }
 
 impl SnapShotDirectory {
-    pub fn new<Store: ObjectStore>(dir: &Path, ignores: &IgnoreRules, store: &mut Store) -> Result<Box<Self>, YsError> {
+    pub fn new<Store: ObjectStore>(dir: &Path, ignores: &IgnoreRules, store: &mut Store) -> Result<Self, YsError> {
         let mut root = BTreeMap::new();
         for f in std::fs::read_dir(dir)? {
             let dir_entry = f?;
@@ -59,7 +60,7 @@ impl SnapShotDirectory {
             let file_type = dir_entry.file_type()?;
             if file_type.is_dir() {
                 let directory = SnapShotDirectory::new(dir_entry.path().as_path(), ignores, store)?;
-                root.insert(dir_entry.file_name().into_string().unwrap(), DirectoryEntry::Directory(directory));
+                root.insert(dir_entry.file_name().into_string().unwrap(), DirectoryEntry::Directory(Box::new(directory)));
             }
             else if file_type.is_file() {
                 let id = ObjectID::try_from(dir_entry.path().as_path())?;
@@ -74,6 +75,6 @@ impl SnapShotDirectory {
                 eprintln!("TODO support things which aren't files or directories: {:?}", dir_entry.file_name());
             }
         }
-        Ok(Box::new(SnapShotDirectory { root }))
+        Ok(SnapShotDirectory { root })
     }
 }

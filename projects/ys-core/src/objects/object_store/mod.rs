@@ -1,7 +1,6 @@
 use super::*;
 use serde::de::DeserializeOwned;
 
-
 pub mod file_system;
 pub mod in_memory;
 
@@ -48,7 +47,7 @@ pub trait ObjectStore {
     ///
     /// # 返回值
     /// - `Result<ObjectID, Self::Error>`: 如果对象成功插入，返回该对象的唯一标识符`ObjectID`的`Result::Ok`；如果插入失败，返回`Result::Err(error)`，其中`error`是`Self::Error`类型。
-    fn put(&mut self, object: &[u8]) -> impl Future<Output = Result<ObjectID, YsError>> + Send;
+    fn put(&mut self, id: ObjectID, object: &[u8]) -> impl Future<Output = Result<ObjectID, YsError>> + Send;
 
     /// 将对象插入存储。
     ///
@@ -59,9 +58,17 @@ pub trait ObjectStore {
     /// - `Result<ObjectID, Self::Error>`: 如果对象成功插入，返回该对象的唯一标识符`ObjectID`的`Result::Ok`；如果插入失败，返回`Result::Err(error)`，其中`error`是`Self::Error`类型。
     async fn put_typed<I>(&mut self, object: &I) -> Result<ObjectID, YsError>
     where
-        I: Serialize + Send + Sync,
+        I: SerializableObjects,
     {
         let buffer = serde_json::to_vec(object)?;
-        self.put(&buffer).await
+        let object_id = self.put(object.object_id(), &buffer).await?;
+        Ok(object_id)
+    }
+}
+
+pub trait SerializableObjects: Serialize + Send + Sync {
+    fn object_id(&self) -> ObjectID {
+        let buffer = serde_json::to_vec(self).unwrap();
+        ObjectID { hash256: blake3::hash(&buffer) }
     }
 }

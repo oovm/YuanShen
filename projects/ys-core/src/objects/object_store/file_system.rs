@@ -1,5 +1,4 @@
 use super::*;
-use crate::utils::vec_json;
 use std::fs::{create_dir, try_exists};
 
 /// 本地文件系统对象储存
@@ -43,10 +42,7 @@ impl ObjectStore for LocalObjectStore {
         Ok(v)
     }
 
-
-
-    async fn put(&mut self, object: &[u8]) -> Result<ObjectID, YsError> {
-        let id: ObjectID = object.into();
+    async fn put(&mut self, id: ObjectID, object: &[u8]) -> Result<ObjectID, YsError> {
         tracing::trace!("正在插入 {} 到 {:?}", id, self.root);
         let s: String = format!("{}", id);
         let sub: &str = &s[0..HASH_HEADER_LENGTH];
@@ -65,12 +61,5 @@ impl ObjectStore for LocalObjectStore {
         f.write(&object)?;
         Ok(id)
     }
-
-    async fn put_typed<I>(&mut self, object: &I) -> Result<ObjectID, YsError>
-    where
-        I: Serialize + Send + Sync,
-    {
-        let bytes = vec_json(object)?;
-        self.put(&bytes).await
-    }
+    
 }

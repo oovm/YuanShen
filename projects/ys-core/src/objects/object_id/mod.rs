@@ -11,7 +11,7 @@ mod tests;
 /// 256 位对象 ID
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct ObjectID {
-    hash256: Hash,
+   pub(crate) hash256: Hash,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
