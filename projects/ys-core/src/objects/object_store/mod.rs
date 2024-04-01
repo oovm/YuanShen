@@ -58,17 +58,20 @@ pub trait ObjectStore {
     /// - `Result<ObjectID, Self::Error>`: 如果对象成功插入，返回该对象的唯一标识符`ObjectID`的`Result::Ok`；如果插入失败，返回`Result::Err(error)`，其中`error`是`Self::Error`类型。
     async fn put_typed<I>(&mut self, object: &I) -> Result<ObjectID, YsError>
     where
-        I: SerializableObjects,
+        I: YuanShenObject,
     {
-        let buffer = serde_json::to_vec(object)?;
+        let buffer = object.as_bytes();
         let object_id = self.put(object.object_id(), &buffer).await?;
         Ok(object_id)
     }
 }
 
-pub trait SerializableObjects: Serialize + Send + Sync {
+pub trait YuanShenObject: Serialize + Send + Sync + DeserializeOwned {
     fn object_id(&self) -> ObjectID {
-        let buffer = serde_json::to_vec(self).unwrap();
+        let buffer = self.as_bytes();
         ObjectID { hash256: blake3::hash(&buffer) }
+    }
+    fn as_bytes(&self) -> Cow<[u8]> {
+        Cow::Owned(serde_json::to_vec(self).unwrap())
     }
 }

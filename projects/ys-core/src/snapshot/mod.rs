@@ -1,43 +1,65 @@
 use crate::{
-    errors::YsError, snapshot::directory::SnapShotDirectory, AuthorID, DirectoryEntry, IgnoreRules, LocalObjectStore, ObjectID,
-    ObjectStore,   DOT_YUAN_SHEN,
+    errors::YsError, objects::object_store::YuanShenObject, snapshot::directory::SnapShotTree, AuthorID, DirectoryEntry,
+    IgnoreRules, LocalObjectStore, ObjectID, ObjectStore, DOT_YUAN_SHEN,
 };
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     borrow::Cow,
     collections::{BTreeMap, BTreeSet},
     fmt::{Debug, Display, Formatter},
     fs::{create_dir, create_dir_all, read_dir, read_to_string, try_exists, File},
+    hash::Hash,
     io::Write,
     path::{Path, PathBuf},
+    time::SystemTime,
 };
-use crate::objects::object_store::SerializableObjects;
 
 pub mod differences;
 pub mod directory;
 pub mod initialize;
 
 /// 快照
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SnapShot {
-    /// 当前目录结构的 id
-    pub directory: ObjectID,
+#[derive(Clone, Debug)]
+pub struct Commit {
+    pub datetime: SystemTime,
     /// 快照的前驱节点, 可能没有, 或者一个, 或者多个
-    pub previous: BTreeSet<ObjectID>,
-    pub data: SnapShotData,
-}
-
-impl SerializableObjects for SnapShot {}
-
-#[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize)]
-pub struct SnapShotData {
-    /// 快照类型, fix, test 或者其他
-    pub kind: u32,
-    /// The message added with the commit.
-    pub message: String,
+    pub parents: Vec<CommitParent>,
     /// The author ids of the commit.
     pub authors: BTreeSet<AuthorID>,
-    // pub datetime: SystemTime
+}
+
+
+
+impl Serialize for Commit {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        todo!()
+    }
+}
+
+impl<'de> Deserialize<'de> for Commit {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        todo!()
+    }
+}
+
+impl YuanShenObject for Commit {
+    fn object_id(&self) -> ObjectID {
+        let mut hasher = blake3::Hasher::default();
+        hasher.update(self.tree.hash256.as_bytes());
+        for id in &self.parents {
+            hasher.update(id.hash256.as_bytes());
+        }
+        for author in &self.extra.authors {
+            hasher.update(author.hash256.as_bytes());
+        }
+        hasher.finalize().into()
+    }
 }
 
 #[derive(Copy, Debug, Clone)]
@@ -47,11 +69,11 @@ pub enum SnapShotKind {
     Test,
 }
 
-impl Eq for SnapShot {}
+impl Eq for Commit {}
 
-impl PartialEq for SnapShot {
+impl PartialEq for Commit {
     fn eq(&self, other: &Self) -> bool {
         // 数据不加入校验
-        self.directory.eq(&other.directory) && self.previous.eq(&other.previous)
+        self.tree.eq(&other.tree) && self.parents.eq(&other.parents)
     }
 }

@@ -6,7 +6,7 @@ use clap_builder::{
 use std::{env::current_dir, fmt::Debug, io::stdout};
 use ys_core::{
     initialize::{DotYuanShenClient, YuanShenClient},
-    IgnoreRules, ObjectID, ObjectStore, SnapShot, SnapShotDirectory, YsError,
+    IgnoreRules, ObjectID, ObjectStore, Commit, SnapShotTree, YsError,
 };
 use yuan_shen::*;
 
@@ -225,9 +225,9 @@ pub async fn main() -> Result<(), YsError> {
             let branch: String = dot_rev.get_branch_name().unwrap();
             let old_tip: ObjectID = dot_rev.get_branch_id(&branch).unwrap();
             let ignores: IgnoreRules = dot_rev.ignores().unwrap();
-            let directory = SnapShotDirectory::new(dir.as_path(), &ignores, &mut store).unwrap();
-            let snapshot: SnapShot = store.get_typed(old_tip).await.unwrap();
-            let old_directory: SnapShotDirectory = store.get_typed(snapshot.directory).await.unwrap();
+            let directory = SnapShotTree::new(dir.as_path(), &ignores, &mut store).unwrap();
+            let snapshot: Commit = store.get_typed(old_tip).await.unwrap();
+            let old_directory: SnapShotTree = store.get_typed(snapshot.directory).await.unwrap();
             serde_json::to_writer_pretty(stdout(), &old_directory.difference(&directory)).unwrap();
         }
         Commit(sub) => sub.commit().await.unwrap(),

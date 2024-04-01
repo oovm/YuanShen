@@ -31,12 +31,12 @@ impl InitializeConfig {
         self.generate_configs()?;
         // 创建初始提交
         let mut store = LocalObjectStore::new(self.join("store"))?;
-        let directory = SnapShotDirectory::default();
+        let directory = SnapShotTree::default();
         let directory = store.put_typed(&directory).await?;
-        let snapshot = SnapShot {
-            directory,
-            previous: BTreeSet::new(),
-            data: SnapShotData { kind: 0, message: "Project initialized!".to_string(), authors: Default::default() },
+        let snapshot = Commit {
+            tree: directory,
+            parents: BTreeSet::new(),
+            extra: SnapShotData { kind: 0, message: "Project initialized!".to_string(), authors: Default::default() },
         };
         let snapshot_id = store.put_typed(&snapshot).await?;
         write_json(&snapshot_id, &root.join("branches").join(self.initial_branch.as_ref()))?;

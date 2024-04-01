@@ -22,7 +22,7 @@ pub use crate::{
     },
     snapshot::{
         differences,
-        directory::{DirectoryEntry, SnapShotDirectory},
-        initialize, SnapShot, SnapShotData,
+        directory::{DirectoryEntry, SnapShotTree},
+        initialize, Commit, SnapShotData,
     },
 };

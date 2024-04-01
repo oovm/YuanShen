@@ -1,3 +1,4 @@
+use std::hash::{Hash, Hasher};
 use super::*;
 use crate::{
 
@@ -11,7 +12,13 @@ mod tests;
 /// 256 位对象 ID
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct ObjectID {
-   pub(crate) hash256: Hash,
+   pub(crate) hash256: blake3::Hash,
+}
+
+impl Hash for ObjectID {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.hash256.hash(state)
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -24,7 +31,7 @@ impl ObjectID {
     pub fn read_branch(dot_ys: &Path, name: &str) -> Result<Self, YsError> {
         let file = dot_ys.join("branches").join(name);
         let json = read_json::<BranchJson>(&file)?;
-        Ok(Self { hash256: Hash::from_hex(&json.tree_id)? })
+        Ok(Self { hash256: blake3::Hash::from_hex(&json.tree_id)? })
     }
     pub fn write_branch(&self, dot_ys: &Path, name: &str) -> Result<(), YsError> {
         let file = dot_ys.join("branches").join(name);

@@ -5,22 +5,83 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use serde::{Deserialize, Serialize};
+use serde::{ser::SerializeMap, Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::{objects::object_store::SerializableObjects, IgnoreRules, ObjectID, ObjectStore, YsError};
+use crate::{objects::object_store::YuanShenObject, IgnoreRules, ObjectID, ObjectStore, YsError};
 
-/// A directory tree, with [`ObjectID`]s at the leaves.
-#[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize, Default)]
-pub struct SnapShotDirectory {
-    #[serde(flatten)]
+// A directory tree, with [`ObjectID`]s at the leaves.
+#[derive(PartialEq, Eq, Debug, Clone, Default)]
+pub struct SnapShotTree {
     pub root: BTreeMap<String, DirectoryEntry>,
 }
 
-impl SerializableObjects for SnapShotDirectory {}
+impl Serialize for SnapShotTree {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(self.root.len()))?;
+        for (name, entry) in self.root.iter() {
+            map.serialize_entry(name, entry)?;
+        }
+        map.end()
+    }
+}
 
+impl<'de> Deserialize<'de> for SnapShotTree {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        todo!()
+    }
+}
 
+#[derive(PartialEq, Eq, Debug, Clone, Default)]
+pub enum DirectoryEntry {
+    Directory(DirectoryObject),
+    File(FileObject),
+    /// A reference to other snapshots.
+    Subtree(SubTreeObject),
+}
 
-impl SnapShotDirectory {
+pub struct DirectoryObject {
+    entries: BTreeMap<String, DirectoryEntry>,
+}
+
+impl Serialize for DirectoryObject {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(self.entries.len()))?;
+        for (name, entry) in self.entries.iter() {
+            map.serialize_entry(name, entry)?;
+        }
+        map.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for DirectoryObject {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+    {
+        todo!()
+    }
+}
+
+pub struct FileObject {
+    id: ObjectID,
+}
+
+pub struct SubTreeObject {
+    id: ObjectID,
+}
+
+impl YuanShenObject for SnapShotTree {}
+
+impl SnapShotTree {
     /// Write out the directory structure at the given directory path.
     ///
     /// The target directory must already exist.
@@ -43,13 +104,7 @@ impl SnapShotDirectory {
     }
 }
 
-#[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize)]
-pub enum DirectoryEntry {
-    Directory(Box<SnapShotDirectory>),
-    File(ObjectID),
-}
-
-impl SnapShotDirectory {
+impl SnapShotTree {
     pub fn new<Store: ObjectStore>(dir: &Path, ignores: &IgnoreRules, store: &mut Store) -> Result<Self, YsError> {
         let mut root = BTreeMap::new();
         for f in std::fs::read_dir(dir)? {
@@ -59,7 +114,7 @@ impl SnapShotDirectory {
             }
             let file_type = dir_entry.file_type()?;
             if file_type.is_dir() {
-                let directory = SnapShotDirectory::new(dir_entry.path().as_path(), ignores, store)?;
+                let directory = SnapShotTree::new(dir_entry.path().as_path(), ignores, store)?;
                 root.insert(dir_entry.file_name().into_string().unwrap(), DirectoryEntry::Directory(Box::new(directory)));
             }
             else if file_type.is_file() {
@@ -75,6 +130,6 @@ impl SnapShotDirectory {
                 eprintln!("TODO support things which aren't files or directories: {:?}", dir_entry.file_name());
             }
         }
-        Ok(SnapShotDirectory { root })
+        Ok(SnapShotTree { root })
     }
 }

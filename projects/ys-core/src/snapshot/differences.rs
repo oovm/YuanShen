@@ -75,10 +75,10 @@ impl DirectoryEntry {
     }
 }
 
-impl SnapShotDirectory {
+impl SnapShotTree {
     /// Compute the diff between this directory structure and the one
     /// which is currently located at the path.
-    pub fn difference(&self, other: &SnapShotDirectory) -> SnapShotDifference {
+    pub fn difference(&self, other: &SnapShotTree) -> SnapShotDifference {
         let added: BTreeMap<String, DirectoryEntry> = other
             .root
             .iter()

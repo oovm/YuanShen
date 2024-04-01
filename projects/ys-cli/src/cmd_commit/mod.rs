@@ -2,7 +2,7 @@ use clap::Args;
 use std::env::current_dir;
 use ys_core::{
     initialize::{DotYuanShenClient, YuanShenClient},
-    IgnoreRules, ObjectID, ObjectStore, SnapShot, SnapShotData, SnapShotDirectory, YsError,
+    IgnoreRules, ObjectID, ObjectStore, Commit, SnapShotData, SnapShotTree, YsError,
 };
 
 #[derive(Debug, Args)]
@@ -23,12 +23,12 @@ impl YuanShenCommit {
         let branch: String = dot_rev.get_branch_name().unwrap();
         let old_tip: ObjectID = dot_rev.get_branch_id(&branch)?;
         let ignores: IgnoreRules = dot_rev.ignores().unwrap();
-        let directory = SnapShotDirectory::new(dir.as_path(), &ignores, &mut store).unwrap();
+        let directory = SnapShotTree::new(dir.as_path(), &ignores, &mut store).unwrap();
         let directory_id = store.put_typed(&directory).await.unwrap();
-        let snap = SnapShot {
-            directory: directory_id,
-            previous: vec![old_tip].into_iter().collect(),
-            data: SnapShotData { kind: 0, message: self.message, authors: Default::default() },
+        let snap = Commit {
+            tree: directory_id,
+            parents: vec![old_tip].into_iter().collect(),
+            extra: SnapShotData { kind: 0, message: self.message, authors: Default::default() },
         };
         let snap_id = store.put_typed(&snap).await?;
         dot_rev.set_branch_snapshot_id(&branch, snap_id)

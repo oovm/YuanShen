@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Copy, Clone, Debug, Eq)]
 pub struct AuthorID {
-    hash256: Hash,
+    pub(crate) hash256: blake3::Hash,
 }
 
 impl PartialEq for AuthorID {

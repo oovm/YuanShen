@@ -4,7 +4,7 @@ use std::{
 };
 use ys_core::{
     differences::{DifferenceEntry, SnapShotDifference},
-    DirectoryEntry, IgnoreRules, LocalObjectStore, MemoryObjectStore, ObjectID, ObjectStore, SnapShotDirectory,
+    DirectoryEntry, IgnoreRules, LocalObjectStore, MemoryObjectStore, ObjectID, ObjectStore, SnapShotTree,
 };
 
 #[test]
@@ -79,7 +79,7 @@ fn test_diff_display() {
 async fn test_directory() {
     let dir = current_dir().unwrap();
     let mut store = MemoryObjectStore::new();
-    let codebase = SnapShotDirectory::new(
+    let codebase = SnapShotTree::new(
         dir.as_path(),
         &IgnoreRules { glob: vec![String::from(".git"), String::from(".ys"), String::from("target")].into_iter().collect() },
         &mut store,

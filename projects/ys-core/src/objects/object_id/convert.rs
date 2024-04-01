@@ -1,5 +1,10 @@
 use super::*;
 
+impl From<blake3::Hash> for ObjectID {
+    fn from(value: blake3::Hash) -> Self {
+        Self { hash256: value }
+    }
+}
 
 impl From<&Vec<u8>> for ObjectID {
     fn from(vec: &Vec<u8>) -> Self {
@@ -44,8 +49,8 @@ impl FromStr for ObjectID {
     type Err = YsError;
 
     fn from_str(s: &str) -> Result<Self, YsError> {
-        match Hash::from_hex(&s) {
-            Ok(hash256) => Ok(ObjectID { hash256 }),
+        match blake3::Hash::from_hex(&s) {
+            Ok(hash256) => Ok(hash256.into()),
             Err(e) => Err(YsErrorKind::InvalidObject { message: e.to_string() })?,
         }
     }
@@ -57,8 +62,8 @@ impl<'de> Deserialize<'de> for ObjectID {
         D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        match Hash::from_hex(&s) {
-            Ok(o) => Ok(Self { hash256: o }),
+        match blake3::Hash::from_hex(&s) {
+            Ok(hash256) => Ok(hash256.into()),
             Err(e) => Err(serde::de::Error::custom(e)),
         }
     }
