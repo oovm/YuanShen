@@ -8,15 +8,12 @@
 mod errors;
 mod objects;
 mod snapshot;
-mod storage;
-
-
+pub mod storage;
 
 pub(crate) mod utils;
 
 const DOT_YUAN_SHEN: &'static str = ".ys";
 
-use std::future::Future;
 pub use crate::{
     errors::{Result, YsError, YsErrorKind},
     objects::{
@@ -28,6 +25,7 @@ pub use crate::{
     snapshot::{
         differences,
         directory::{DirectoryEntry, SnapShotTree},
-        initialize, Commit, 
+        initialize, Commit,
     },
 };
+

@@ -13,6 +13,7 @@ use std::{
     path::{Path, PathBuf},
     time::SystemTime,
 };
+use crate::objects::commit_parent::CommitParent;
 
 pub mod differences;
 pub mod directory;
@@ -50,15 +51,16 @@ impl<'de> Deserialize<'de> for Commit {
 
 impl YuanShenObject for Commit {
     fn object_id(&self) -> ObjectID {
-        let mut hasher = blake3::Hasher::default();
-        hasher.update(self.tree.hash256.as_bytes());
-        for id in &self.parents {
-            hasher.update(id.hash256.as_bytes());
-        }
-        for author in &self.extra.authors {
-            hasher.update(author.hash256.as_bytes());
-        }
-        hasher.finalize().into()
+        todo!();
+        // let mut hasher = blake3::Hasher::default();
+        // hasher.update(self.tree.hash256.as_bytes());
+        // for id in &self.parents {
+        //     hasher.update(id.hash256.as_bytes());
+        // }
+        // for author in &self.extra.authors {
+        //     hasher.update(author.hash256.as_bytes());
+        // }
+        // hasher.finalize().into()
     }
 }
 
@@ -74,6 +76,7 @@ impl Eq for Commit {}
 impl PartialEq for Commit {
     fn eq(&self, other: &Self) -> bool {
         // 数据不加入校验
-        self.tree.eq(&other.tree) && self.parents.eq(&other.parents)
+        todo!()
+        // self.tree.eq(&other.tree) && self.parents.eq(&other.parents)
     }
 }

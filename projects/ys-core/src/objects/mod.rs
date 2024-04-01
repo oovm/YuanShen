@@ -20,5 +20,6 @@ pub mod object_id;
 pub mod object_store;
 pub mod commit_parent;
 pub mod text_file;
+pub mod binary_file;
 
 

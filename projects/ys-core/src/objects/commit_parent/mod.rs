@@ -1,7 +1,8 @@
 use crate::{objects::object_store::YuanShenObject, ObjectID};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::ser::SerializeMap;
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct CommitParent {
     pub tree: ObjectID,
     pub modifier: ObjectID,
@@ -12,7 +13,7 @@ impl Serialize for CommitParent {
     where
         S: Serializer,
     {
-        let mut map = serializer.serialize_map(Some(2));
+        let mut map = serializer.serialize_map(Some(2))?;
         map.serialize_entry("tree", &self.tree)?;
         map.serialize_entry("modifier", &self.modifier)?;
         map.end()
