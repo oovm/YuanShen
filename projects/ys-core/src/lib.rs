@@ -17,23 +17,11 @@ const DOT_YUAN_SHEN: &'static str = ".ys";
 
 pub use crate::{
     errors::{Result, YsError, YsErrorKind},
-    objects::{
-
-    },
     snapshot::{
         differences,
         directory::{DirectoryEntry, SnapShotTree},
-        initialize, 
+        initialize,
     },
-    traits::YuanShenClient
+    traits::{YuanShenClient, YuanShenObject},
+    utils::async_test,
 };
-
-
-/// Create a test environment which returns the [Result<()>]
-pub fn async_test<F>(future: F)
-where
-    F: std::future::Future<Output = std::result::Result<(), YsError>>,
-{
-    let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-    rt.block_on(async { future.await.unwrap() })
-}

@@ -16,7 +16,7 @@ pub trait YuanShenClient {
     /// ## Examples
     ///
     /// ```
-    /// # use ys_core::{async_test, YuanShenClient, storage::{MemoryObjectPool}};
+    /// # use ys_core::{async_test, YuanShenClient, YuanShenObject, storage::{MemoryObjectPool}};
     /// # async_test(async {
     /// let client = MemoryObjectPool::default();
     /// let id = client.put_string("Wo chao! Yuan!").await?;
@@ -33,7 +33,7 @@ pub trait YuanShenClient {
     /// ## Examples
     ///
     /// ```
-    /// # use ys_core::{async_test, storage::{MemoryObjectPool, YuanShenClient}};
+    /// # use ys_core::{async_test, YuanShenClient, storage::{MemoryObjectPool}};
     /// # async_test(async {
     /// let client = MemoryObjectPool::default();
     /// let id = client.put_string("Wo chao! Yuan!").await?;
@@ -50,7 +50,7 @@ pub trait YuanShenClient {
     /// ## Examples
     ///
     /// ```
-    /// # use ys_core::{async_test, storage::{MemoryObjectPool, YuanShenClient}};
+    /// # use ys_core::{async_test, YuanShenClient, storage::{MemoryObjectPool}};
     /// # async_test(async {
     /// let client = MemoryObjectPool::default();
     /// let id = client.put_string("Wo chao! Yuan!").await?;
