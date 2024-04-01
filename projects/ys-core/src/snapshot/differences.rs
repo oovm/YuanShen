@@ -1,3 +1,4 @@
+use crate::objects::ObjectID;
 use super::*;
 
 /// SnapShotDifference 结构体定义了快照之间的差异

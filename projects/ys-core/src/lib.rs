@@ -6,9 +6,10 @@
 #![doc(html_favicon_url = "https://raw.githubusercontent.com/oovm/shape-rs/dev/projects/images/Trapezohedron.svg")]
 
 mod errors;
-mod objects;
+pub mod objects;
 mod snapshot;
 pub mod storage;
+mod traits;
 
 pub(crate) mod utils;
 
@@ -17,14 +18,16 @@ const DOT_YUAN_SHEN: &'static str = ".ys";
 pub use crate::{
     errors::{Result, YsError, YsErrorKind},
     objects::{
-        author_id::AuthorID, ignore_rules::IgnoreRules, object_id::ObjectID, object_store::file_system::LocalObjectStore,
+
     },
     snapshot::{
         differences,
         directory::{DirectoryEntry, SnapShotTree},
-        initialize, Commit,
+        initialize, 
     },
+    traits::YuanShenClient
 };
+
 
 /// Create a test environment which returns the [Result<()>]
 pub fn async_test<F>(future: F)

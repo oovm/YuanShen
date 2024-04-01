@@ -3,6 +3,7 @@ use crate::{
     utils::{read_json, truncate_write, write_json},
     YsErrorKind,
 };
+use crate::objects::{IgnoreRules, LocalObjectStore, ObjectID};
 
 /// `.ys` 文件夹
 #[derive(Debug)]

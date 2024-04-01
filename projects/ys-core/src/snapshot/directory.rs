@@ -7,10 +7,9 @@ use std::{
 
 use serde::{ser::SerializeMap, Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::{IgnoreRules, ObjectID,  YsError};
-use crate::objects::text_file::TextFile;
-use crate::objects::YuanShenObject;
-use crate::storage::YuanShenClient;
+use crate::{YsError, YuanShenClient};
+use crate::objects::{IgnoreRules, ObjectID, TextFile, };
+use crate::traits::YuanShenObject;
 
 // A directory tree, with [`ObjectID`]s at the leaves.
 #[derive(PartialEq, Eq, Debug, Clone, Default)]

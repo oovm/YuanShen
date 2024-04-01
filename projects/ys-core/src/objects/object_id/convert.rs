@@ -1,3 +1,4 @@
+use crate::traits::YuanShenObject;
 use super::*;
 
 impl From<blake3::Hash> for ObjectID {

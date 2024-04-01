@@ -3,11 +3,10 @@ use std::{
     error::Error,
     fmt::{Debug, Display, Formatter},
 };
-
-use crate::ObjectID;
 use blake3::HexError;
 use std::path::PathBuf;
 use std::string::FromUtf8Error;
+use crate::objects::ObjectID;
 
 /// 便捷 Result 类型, 可以少写一个 [YsError]
 pub type Result<T> = std::result::Result<T, YsError>;

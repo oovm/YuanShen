@@ -1,5 +1,5 @@
 use super::*;
-use crate::{objects::text_file::TextFile, storage::YuanShenClient};
+use crate::{objects::text_file::TextFile, YuanShenClient};
 use std::fs::{create_dir, try_exists};
 
 /// 本地文件系统对象储存

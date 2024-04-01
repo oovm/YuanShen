@@ -1,6 +1,8 @@
 use super::*;
 use dashmap::DashMap;
 use tokio::io::AsyncReadExt;
+use crate::objects::{ObjectID, TextFile};
+use crate::YuanShenClient;
 
 /// [YuanShenClient] in memory, all changes will disappear after the program exits, used for testing.
 #[derive(Clone, Debug)]

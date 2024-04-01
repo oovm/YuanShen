@@ -1,4 +1,5 @@
-use crate::{storage::YuanShenClient, ObjectID, YsError};
+use crate::{YsError, YuanShenClient};
+use crate::objects::ObjectID;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct TextFile {
@@ -7,12 +8,12 @@ pub struct TextFile {
     /// Text must hash by [BLAKE3](https://blake3.io/)
     pub string_id: ObjectID,
 }
-
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TextIncremental {
     pub reference: ObjectID,
     pub edits: Vec<ObjectID>,
 }
-
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct TextEdit {}
 
 impl TextFile {
