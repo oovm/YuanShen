@@ -2,7 +2,7 @@
 resolver = "2"
 members = ["projects/*"]
 default-members = [
-    "projects/ys-core",
+    "projects/ys-types",
 ]
 exclude = [
     "projects/.DS_Store",

@@ -1,4 +1,3 @@
-#![feature(fs_try_exists)]
 
 pub use crate::{
     cmd_branch::YuanShenBranch, cmd_checkout::YuanShenCheckout, cmd_commit::YuanShenCommit, cmd_diff::YuanShenDifference,

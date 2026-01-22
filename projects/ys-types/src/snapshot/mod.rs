@@ -9,7 +9,7 @@ use std::{
     borrow::Cow,
     collections::{BTreeMap, BTreeSet},
     fmt::{Debug, Display, Formatter},
-    fs::{create_dir, create_dir_all, read_dir, read_to_string, try_exists, File},
+    fs::{create_dir, create_dir_all, read_dir, read_to_string, File},
     io::Write,
     path::{Path, PathBuf},
 };

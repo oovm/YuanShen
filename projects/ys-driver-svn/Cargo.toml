@@ -1,5 +1,5 @@
 [package]
-name = "ys-postgres"
+name = "ys-driver-svn"
 version = "0.0.0"
 authors = ["Aster <192607617@qq.com>"]
 description = "A modern source code and asset version management system"
@@ -16,7 +16,7 @@ tokio-postgres = "0.7.10"
 
 [dependencies.ys-core]
 version = "0.0.*"
-path = "../ys-core"
+path = "../ys-types"
 
 [dev-dependencies]
 tokio-test = "0.4.4"

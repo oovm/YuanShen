@@ -26,7 +26,7 @@ serde_json = "1.0.115"
 
 [dependencies.ys-core]
 version = "0.0.*"
-path = "../ys-core"
+path = "../ys-types"
 
 
 

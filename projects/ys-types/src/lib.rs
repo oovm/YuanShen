@@ -1,4 +1,3 @@
-#![feature(fs_try_exists)]
 #![deny(missing_debug_implementations, missing_copy_implementations)]
 #![allow(missing_docs, rustdoc::missing_crate_level_docs)]
 #![doc = include_str!("../readme.md")]

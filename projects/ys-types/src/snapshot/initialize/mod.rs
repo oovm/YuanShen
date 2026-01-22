@@ -129,7 +129,7 @@ impl DotYuanShenClient {
 
     /// Checks whether a branch with a given name exists
     pub fn branch_exists(&self, branch: &str) -> Result<bool, YsError> {
-        Ok(try_exists(self.dot_root.join("branches").join(&branch))?)
+        Ok(self.dot_root.join("branches").join(&branch).try_exists()?)
     }
 
     pub fn store(&self) -> Result<LocalDotYuanShen, YsError> {

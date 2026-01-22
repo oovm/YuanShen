@@ -8,7 +8,7 @@ use dashmap::DashMap;
 pub use file_system::LocalDotYuanShen;
 pub use in_memory::MemoryObjectPool;
 use std::{
-    fs::{create_dir, try_exists},
+    fs::create_dir,
     path::{Path, PathBuf},
 };
 use tokio::{fs::File, io::AsyncWriteExt};

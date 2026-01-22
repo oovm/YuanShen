@@ -10,7 +10,7 @@ pub struct LocalDotYuanShen {
 impl LocalDotYuanShen {
     /// 创建一个本地文件系统对象储存
     pub fn new(root: PathBuf) -> Result<Self, std::io::Error> {
-        if !try_exists(&root)? {
+        if !root.try_exists()? {
             tracing::info!("正在创建储存库: {:?}", root);
             create_dir(&root)?;
         }
@@ -83,11 +83,11 @@ impl LocalDotYuanShen {
         let filename: &str = &s[HASH_HEADER_LENGTH..];
         let subdir_path = self.root.join(format!("{}", sub));
         let path = subdir_path.join(format!("{}", filename));
-        if std::fs::try_exists(&path)? {
+        if path.try_exists()? {
             tracing::info!("{:?} already exists", path);
             return Ok(id);
         }
-        if !std::fs::try_exists(&subdir_path)? {
+        if !subdir_path.try_exists()? {
             tracing::info!("creating subdir path {:?} in {:?}", subdir_path, self.root);
             std::fs::create_dir(&subdir_path)?;
         }
