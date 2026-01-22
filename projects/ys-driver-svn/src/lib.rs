@@ -1,18 +1,24 @@
 use std::path::Path;
-use ys_types::{ObjectID, YsError, storage::database::DatabaseObjectStore};
+use ys_types::{ObjectID, YsError, traits::{ObjectProxy, BranchProxy}};
 use ys_driver::Driver;
 
-pub struct SvnDriver {
-    store: DatabaseObjectStore,
+pub struct SvnDriver<S> {
+    store: S,
 }
 
-impl SvnDriver {
-    pub fn new(store: DatabaseObjectStore) -> Self {
+impl<S> SvnDriver<S> 
+where 
+    S: ObjectProxy + BranchProxy + Send + Sync + 'static
+{
+    pub fn new(store: S) -> Self {
         Self { store }
     }
 }
 
-impl Driver for SvnDriver {
+impl<S> Driver for SvnDriver<S> 
+where 
+    S: ObjectProxy + BranchProxy + Send + Sync + 'static
+{
     fn name(&self) -> &'static str {
         "svn"
     }

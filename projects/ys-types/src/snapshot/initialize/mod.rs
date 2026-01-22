@@ -1,4 +1,3 @@
-use crate::storage::LocalDotYuanShen;
 use super::*;
 use std::fs::{read_dir, create_dir, create_dir_all};
 use std::io::Write;
@@ -30,7 +29,6 @@ impl InitializeConfig {
         self.generate_branches()?;
         self.generate_configs()?;
         // 创建初始提交
-        let mut store = LocalDotYuanShen::new(self.join("store"))?;
         let directory = SnapShotTree::default();
         // let directory = store.put_typed(&directory).await?;
         // let snapshot = Commit {
@@ -132,10 +130,6 @@ impl DotYuanShenClient {
     /// Checks whether a branch with a given name exists
     pub fn branch_exists(&self, branch: &str) -> Result<bool, YsError> {
         Ok(self.dot_root.join("branches").join(&branch).try_exists()?)
-    }
-
-    pub fn store(&self) -> Result<LocalDotYuanShen, YsError> {
-        Ok(LocalDotYuanShen::new(self.dot_root.clone())?)
     }
 
     pub fn ignores(&self) -> Result<IgnoreRules, YsError> {

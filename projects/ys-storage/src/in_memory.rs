@@ -1,6 +1,6 @@
 use ys_types::{
-    objects::{ObjectID, TextFile, commit_id::SnapShotData},
-    traits::ObjectProxy,
+    objects::{ObjectID, TextFile},
+    ObjectProxy,
     YsError, YsErrorKind, YuanShenObject,
 };
 use std::path::Path;
@@ -19,7 +19,6 @@ impl Default for MemoryObjectPool {
     }
 }
 
-#[async_trait::async_trait]
 impl ObjectProxy for MemoryObjectPool {
     async fn has(&self, id: ObjectID) -> Result<bool, YsError> {
         Ok(self.objects.contains_key(&id))
@@ -28,9 +27,7 @@ impl ObjectProxy for MemoryObjectPool {
     async fn get_string(&self, text: TextFile) -> Result<String, YsError> {
         match self.objects.get(&text.file_id) {
             Some(o) => {
-                let data: SnapShotData = serde_json::from_slice(o.as_slice())?;
-                // This is a simplified version, usually you'd resolve incremental data
-                Ok(data.content.unwrap_or_default())
+                Ok(String::from_utf8_lossy(o.as_slice()).to_string())
             },
             None => Err(YsErrorKind::MissingObject { id: text.file_id })?,
         }

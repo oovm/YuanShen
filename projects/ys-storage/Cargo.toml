@@ -5,10 +5,13 @@ edition = "2021"
 
 [dependencies]
 ys-types = { workspace = true }
-limbo = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 dashmap = { workspace = true }
 tracing = { workspace = true }
-async-trait = "0.1"
+
+[features]
+default = ["mem", "fs"]
+fs = []
+mem = []

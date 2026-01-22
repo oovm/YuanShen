@@ -18,8 +18,7 @@ pub trait YuanShenObject {
 }
 
 /// An object proxy that specifies various capabilities
-#[async_trait::async_trait]
-pub trait ObjectProxy {
+pub trait ObjectProxy: Send + Sync {
     async fn has(&self, id: ObjectID) -> Result<bool, YsError>;
     async fn get_string(&self, text: TextFile) -> Result<String, YsError>;
     async fn get_string_file(&self, text: TextFile, file: &Path) -> Result<(), YsError>;
@@ -31,15 +30,19 @@ pub trait ObjectProxy {
     async fn put_buffer_file(&self, file: &mut File) -> Result<TextFile, YsError>;
 
     // Added methods for typed access
-    async fn get_typed<T: for<'de> serde::Deserialize<'de> + Send>(&self, id: ObjectID) -> Result<T, YsError>;
-    async fn put_typed<T: serde::Serialize + YuanShenObject + Send + Sync>(&self, obj: &T) -> Result<ObjectID, YsError>;
+    async fn get_typed<T>(&self, id: ObjectID) -> Result<T, YsError>
+    where
+        T: for<'de> serde::Deserialize<'de> + Send;
+
+    async fn put_typed<T>(&self, obj: &T) -> Result<ObjectID, YsError>
+    where
+        T: serde::Serialize + YuanShenObject + Send + Sync;
 }
 
 pub trait ObjectStore: ObjectProxy {}
 impl<T: ObjectProxy> ObjectStore for T {}
 
-#[async_trait::async_trait]
-pub trait BranchProxy {
+pub trait BranchProxy: Send + Sync {
     async fn current(&self) -> Result<String, YsError>;
 
     async fn has_branch(&self, branch: &str) -> Result<bool, YsError>;

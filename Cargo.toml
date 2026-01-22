@@ -9,7 +9,6 @@ exclude = [
 ]
 
 [workspace.dependencies]
-# Internal members
 ys-types = { path = "projects/ys-types", version = "0.0.1" }
 ys-storage = { path = "projects/ys-storage", version = "0.1.0" }
 ys-gateway = { path = "projects/ys-gateway", version = "0.0.0" }
@@ -33,7 +32,6 @@ serde = { version = "1.0.160", features = ["derive"] }
 serde_json = "1.0.115"
 tokio = { version = "1.37.0" }
 tokio-util = { version = "0.7", features = ["codec"] }
-limbo = "0.0.22"
 bytes = "1.5"
 futures = "0.3"
 clap = { version = "4.2.5", features = ["derive"] }

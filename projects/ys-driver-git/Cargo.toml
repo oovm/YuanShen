@@ -13,6 +13,7 @@ exclude = ["package.json", "tests/**"]
 [dependencies]
 tokio = { workspace = true, features = ["full"] }
 ys-types = { workspace = true }
+ys-storage = { workspace = true }
 ys-driver = { workspace = true }
 
 [dev-dependencies]

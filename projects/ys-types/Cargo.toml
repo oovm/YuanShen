@@ -16,7 +16,7 @@ tracing = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true, features = ["fs", "io-util", "rt", "macros", "full"] }
-async-trait = "0.1"
+dashmap = { workspace = true }
 
 [dev-dependencies]
 tokio-test = { workspace = true }

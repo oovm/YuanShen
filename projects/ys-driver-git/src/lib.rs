@@ -1,18 +1,24 @@
 use std::path::Path;
-use ys_types::{ObjectID, YsError, storage::database::DatabaseObjectStore};
+use ys_types::{ObjectID, YsError, BranchProxy, ObjectProxy};
 use ys_driver::Driver;
 
-pub struct GitDriver {
-    store: DatabaseObjectStore,
+pub struct GitDriver<S> {
+    store: S,
 }
 
-impl GitDriver {
-    pub fn new(store: DatabaseObjectStore) -> Self {
+impl<S> GitDriver<S> 
+where 
+    S: ObjectProxy + BranchProxy + Send + Sync + 'static
+{
+    pub fn new(store: S) -> Self {
         Self { store }
     }
 }
 
-impl Driver for GitDriver {
+impl<S> Driver for GitDriver<S> 
+where 
+    S: ObjectProxy + BranchProxy + Send + Sync + 'static
+{
     fn name(&self) -> &'static str {
         "git"
     }

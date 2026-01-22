@@ -46,7 +46,7 @@ pub async fn main() -> Result<(), YsError> {
         Changes => {
             let dir = current_dir()?;
             let dot_rev = DotYuanShenClient::open(&dir).unwrap();
-            let mut store = dot_rev.store().unwrap();
+            let mut store = ys_storage::LocalDotYuanShen::new(dir.join(".ys")).unwrap();
             let branch: String = dot_rev.get_branch_name().unwrap();
             let old_tip: ObjectID = dot_rev.get_branch_id(&branch).unwrap();
             let ignores: IgnoreRules = dot_rev.ignores().unwrap();

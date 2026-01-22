@@ -20,14 +20,7 @@ where
 
     /// 处理 Git 引用发现 (v1)
     async fn handle_ref_discovery(&self, framed: &mut Framed<TcpStream, PktLineCodec>) -> Result<(), YsError> {
-        // 这里假设 BranchProxy 有类似 list_branches 的能力，或者我们通过其它方式获取
-        // 实际上之前的 DatabaseObjectStore 有 list_branches，但 BranchProxy 接口没定义
-        // 让我们在 BranchProxy 中增加获取所有分支的能力
-        
-        // 暂时假设我们只能获取当前分支或者硬编码几个分支进行测试
-        // 理想情况下 BranchProxy 应该能列出所有分支
-        
-        let branches = vec![("main".to_string(), "0000000000000000000000000000000000000000".to_string())];
+        let branches = self.store.list_branches().await?;
         
         if branches.is_empty() {
             framed.send(PktLine::Flush).await.map_err(|e| YsError::external_error(e))?;
@@ -50,7 +43,6 @@ where
     }
 }
 
-#[async_trait::async_trait]
 impl<S> Gateway for GitGateway<S> 
 where 
     S: ObjectProxy + BranchProxy + Send + Sync + 'static

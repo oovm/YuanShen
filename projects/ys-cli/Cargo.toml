@@ -24,6 +24,7 @@ clap_builder = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 serde_json = { workspace = true }
 ys-types = { workspace = true }
+ys-storage = { workspace = true }
 
 
 

@@ -1,6 +1,6 @@
 use ys_types::{
     objects::{ObjectID, TextFile},
-    traits::ObjectProxy,
+    ObjectProxy,
     YsError, YuanShenObject,
 };
 use std::path::{Path, PathBuf};
@@ -28,7 +28,6 @@ impl LocalDotYuanShen {
     }
 }
 
-#[async_trait::async_trait]
 impl ObjectProxy for LocalDotYuanShen {
     async fn has(&self, id: ObjectID) -> Result<bool, YsError> {
         Ok(self.store_file(id).exists())
@@ -78,13 +77,19 @@ impl ObjectProxy for LocalDotYuanShen {
         todo!()
     }
 
-    async fn get_typed<T: for<'de> serde::Deserialize<'de> + Send>(&self, id: ObjectID) -> Result<T, YsError> {
+    async fn get_typed<T>(&self, id: ObjectID) -> Result<T, YsError>
+    where
+        T: for<'de> serde::Deserialize<'de> + Send
+    {
         let path = self.store_file(id);
         let bytes = tokio::fs::read(path).await.map_err(|e| YsError::external_error(e))?;
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    async fn put_typed<T: serde::Serialize + YuanShenObject + Send + Sync>(&self, obj: &T) -> Result<ObjectID, YsError> {
+    async fn put_typed<T>(&self, obj: &T) -> Result<ObjectID, YsError>
+    where
+        T: serde::Serialize + YuanShenObject + Send + Sync
+    {
         let id = obj.object_id();
         let path = self.store_file(id);
         if !path.exists() {
