@@ -1,3 +1,5 @@
+#![doc = include_str!("readme.md")]
+
 pub mod file_system;
 pub mod in_memory;
 #[cfg(feature = "limbo")]

@@ -12,8 +12,6 @@ pub struct LocalDotYuanShen {
     root: PathBuf,
 }
 
-impl crate::StorageBackend for LocalDotYuanShen {}
-
 impl LocalDotYuanShen {
     pub fn new(root: PathBuf) -> Result<Self, std::io::Error> {
         if !root.exists() {
@@ -23,7 +21,7 @@ impl LocalDotYuanShen {
     }
 
     fn store_file(&self, id: ObjectID) -> PathBuf {
-        let s = id.hash256.to_string();
+        let s = id.to_string();
         let sub = &s[0..2];
         let filename = &s[2..];
         self.root.join(sub).join(filename)

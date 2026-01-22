@@ -17,8 +17,6 @@ pub struct MemoryObjectPool {
     current_branch: Arc<RwLock<String>>,
 }
 
-impl crate::StorageBackend for MemoryObjectPool {}
-
 impl Default for MemoryObjectPool {
     fn default() -> Self {
         Self { 
@@ -105,7 +103,7 @@ impl BranchProxy for MemoryObjectPool {
     async fn get_branch_id(&self, name: &str) -> Result<ObjectID, YsError> {
         match self.branches.get(name) {
             Some(id) => Ok(*id),
-            None => Err(YsErrorKind::GenericError { message: format!("Branch not found: {}", name) })?,
+            None => Err(YsError::invalid_object(format!("Branch not found: {}", name)))?,
         }
     }
 

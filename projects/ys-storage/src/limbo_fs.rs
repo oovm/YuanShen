@@ -11,11 +11,9 @@ use std::sync::Arc;
 /// 使用 Limbo (SQLite) 存储元数据，FS 存储大文件对象
 pub struct LimboFsStorage {
     root: PathBuf,
-    #[cfg(feature = "limbo")]
     db: Arc<limbo::Database>,
 }
 
-#[cfg(feature = "limbo")]
 impl LimboFsStorage {
     pub async fn new(root: PathBuf) -> Result<Self, YsError> {
         if !root.exists() {
@@ -23,15 +21,18 @@ impl LimboFsStorage {
         }
         
         let db_path = root.join("metadata.db");
-        let io = Arc::new(limbo::PlatformIO::new());
-        let db = limbo::Database::open_file(io, db_path.to_str().unwrap())
+        let db = limbo::Builder::new_local(db_path.to_str().unwrap())
+            .build()
+            .await
             .map_err(|e| YsError::external_error(e))?;
         
-        let conn = db.connect();
+        let conn = db.connect().map_err(|e| YsError::external_error(e))?;
         // 初始化表
-        conn.execute("CREATE TABLE IF NOT EXISTS branches (name TEXT PRIMARY KEY, id BLOB)", ())
+        conn.execute("CREATE TABLE IF NOT EXISTS branches (name TEXT, id BLOB)", ())
+            .await
             .map_err(|e| YsError::external_error(e))?;
-        conn.execute("CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT)", ())
+        conn.execute("CREATE TABLE IF NOT EXISTS config (key TEXT, value TEXT)", ())
+            .await
             .map_err(|e| YsError::external_error(e))?;
 
         Ok(Self {
@@ -41,17 +42,13 @@ impl LimboFsStorage {
     }
 
     fn store_file(&self, id: ObjectID) -> PathBuf {
-        let s = id.hash256.to_string();
+        let s = id.to_string();
         let sub = &s[0..2];
         let filename = &s[2..];
         self.root.join("objects").join(sub).join(filename)
     }
 }
 
-#[cfg(feature = "limbo")]
-impl crate::StorageBackend for LimboFsStorage {}
-
-#[cfg(feature = "limbo")]
 impl ObjectProxy for LimboFsStorage {
     async fn has(&self, id: ObjectID) -> Result<bool, YsError> {
         Ok(self.store_file(id).exists())
@@ -127,72 +124,119 @@ impl ObjectProxy for LimboFsStorage {
     }
 }
 
-#[cfg(feature = "limbo")]
 impl BranchProxy for LimboFsStorage {
     async fn get_branch_name(&self) -> Result<String, YsError> {
-        let conn = self.db.connect();
-        let mut stmt = conn.prepare("SELECT value FROM config WHERE key = 'current_branch'")
+        let conn = self.db.connect().map_err(|e| YsError::external_error(e))?;
+        let mut rows = conn
+            .query("SELECT value FROM config WHERE key = 'current_branch'", ())
+            .await
             .map_err(|e| YsError::external_error(e))?;
-        let mut rows = stmt.query([]).map_err(|e| YsError::external_error(e))?;
-        
-        if let Some(row) = rows.next().map_err(|e| YsError::external_error(e))? {
-            let name: String = row.get(0).map_err(|e| YsError::external_error(e))?;
-            Ok(name)
-        } else {
-            Ok("main".to_string())
+        if let Some(row) = rows.next().await.map_err(|e| YsError::external_error(e))? {
+            let val = row.get_value(0).map_err(|e| YsError::external_error(e))?;
+            if let limbo::Value::Text(s) = val {
+                return Ok(s);
+            }
         }
+        Ok("main".to_string())
     }
 
     async fn set_branch_name(&self, name: &str) -> Result<(), YsError> {
-        let conn = self.db.connect();
-        conn.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('current_branch', ?)", (name,))
-            .map_err(|e| YsError::external_error(e))?;
+        let conn = self.db.connect().map_err(|e| YsError::external_error(e))?;
+        conn.execute(
+            "INSERT OR REPLACE INTO config (key, value) VALUES ('current_branch', ?1)",
+            [name],
+        )
+        .await
+        .map_err(|e| YsError::external_error(e))?;
         Ok(())
     }
 
     async fn get_branch_id(&self, name: &str) -> Result<ObjectID, YsError> {
-        let conn = self.db.connect();
-        let mut stmt = conn.prepare("SELECT id FROM branches WHERE name = ?")
+        let conn = self.db.connect().map_err(|e| YsError::external_error(e))?;
+        let mut rows = conn
+            .query("SELECT id FROM branches WHERE name = ?1", [name])
+            .await
             .map_err(|e| YsError::external_error(e))?;
-        let mut rows = stmt.query((name,)).map_err(|e| YsError::external_error(e))?;
-        
-        if let Some(row) = rows.next().map_err(|e| YsError::external_error(e))? {
-            let bytes: Vec<u8> = row.get(0).map_err(|e| YsError::external_error(e))?;
-            Ok(ObjectID::from_bytes(&bytes).map_err(|e| YsError::external_error(e))?)
-        } else {
-            Err(YsError::external_error(format!("Branch not found: {}", name)))
+        if let Some(row) = rows.next().await.map_err(|e| YsError::external_error(e))? {
+            let val = row.get_value(0).map_err(|e| YsError::external_error(e))?;
+            if let limbo::Value::Blob(bytes) = val {
+                return ObjectID::from_bytes(&bytes);
+            }
         }
+        Err(YsError::invalid_object(format!("Branch not found: {}", name)))
     }
 
     async fn set_branch_id(&self, name: &str, id: ObjectID) -> Result<(), YsError> {
-        let conn = self.db.connect();
-        let bytes = id.to_bytes();
-        conn.execute("INSERT OR REPLACE INTO branches (name, id) VALUES (?, ?)", (name, bytes))
-            .map_err(|e| YsError::external_error(e))?;
+        let conn = self.db.connect().map_err(|e| YsError::external_error(e))?;
+        conn.execute(
+            "INSERT OR REPLACE INTO branches (name, id) VALUES (?1, ?2)",
+            (name, id.as_bytes().to_vec()),
+        )
+        .await
+        .map_err(|e| YsError::external_error(e))?;
         Ok(())
     }
 
     async fn branch_exists(&self, name: &str) -> Result<bool, YsError> {
-        let conn = self.db.connect();
-        let mut stmt = conn.prepare("SELECT 1 FROM branches WHERE name = ?")
+        let conn = self.db.connect().map_err(|e| YsError::external_error(e))?;
+        let mut rows = conn
+            .query("SELECT 1 FROM branches WHERE name = ?1", [name])
+            .await
             .map_err(|e| YsError::external_error(e))?;
-        let mut rows = stmt.query((name,)).map_err(|e| YsError::external_error(e))?;
-        Ok(rows.next().map_err(|e| YsError::external_error(e))?.is_some())
+        Ok(rows
+            .next()
+            .await
+            .map_err(|e| YsError::external_error(e))?
+            .is_some())
     }
 
     async fn list_branches(&self) -> Result<Vec<(String, ObjectID)>, YsError> {
-        let conn = self.db.connect();
-        let mut stmt = conn.prepare("SELECT name, id FROM branches")
+        let conn = self.db.connect().map_err(|e| YsError::external_error(e))?;
+        let mut rows = conn
+            .query("SELECT name, id FROM branches", ())
+            .await
             .map_err(|e| YsError::external_error(e))?;
-        let mut rows = stmt.query([]).map_err(|e| YsError::external_error(e))?;
-        
         let mut branches = Vec::new();
-        while let Some(row) = rows.next().map_err(|e| YsError::external_error(e))? {
-            let name: String = row.get(0).map_err(|e| YsError::external_error(e))?;
-            let bytes: Vec<u8> = row.get(1).map_err(|e| YsError::external_error(e))?;
-            let id = ObjectID::from_bytes(&bytes).map_err(|e| YsError::external_error(e))?;
-            branches.push((name, id));
+        while let Some(row) = rows.next().await.map_err(|e| YsError::external_error(e))? {
+            let name_val = row.get_value(0).map_err(|e| YsError::external_error(e))?;
+            let id_val = row.get_value(1).map_err(|e| YsError::external_error(e))?;
+
+            if let (limbo::Value::Text(name), limbo::Value::Blob(bytes)) = (name_val, id_val) {
+                let id = ObjectID::from_bytes(&bytes)?;
+                branches.push((name, id));
+            }
         }
         Ok(branches)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[tokio::test]
+    async fn test_limbo_fs_storage() {
+        let dir = tempdir().unwrap();
+        let storage = LimboFsStorage::new(dir.path().to_path_buf()).await.unwrap();
+
+        // Test branch operations
+        storage.set_branch_name("dev").await.unwrap();
+        assert_eq!(storage.get_branch_name().await.unwrap(), "dev");
+
+        let id = "test content".object_id();
+        storage.set_branch_id("dev", id).await.unwrap();
+        assert_eq!(storage.get_branch_id("dev").await.unwrap(), id);
+        assert!(storage.branch_exists("dev").await.unwrap());
+
+        let branches = storage.list_branches().await.unwrap();
+        assert_eq!(branches.len(), 1);
+        assert_eq!(branches[0].0, "dev");
+        assert_eq!(branches[0].1, id);
+
+        // Test object operations
+        let text_file = storage.put_string("hello world").await.unwrap();
+        assert!(storage.has(text_file.file_id).await.unwrap());
+        assert_eq!(storage.get_string(text_file).await.unwrap(), "hello world");
     }
 }
