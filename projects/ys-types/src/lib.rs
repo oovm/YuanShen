@@ -7,7 +7,6 @@
 mod errors;
 pub mod objects;
 mod snapshot;
-pub mod storage;
 mod traits;
 
 pub(crate) mod utils;

@@ -2,14 +2,13 @@ use crate::{
     objects::{ObjectID, TextFile},
     YsError,
 };
-use std::future::Future;
 use std::path::Path;
 use tokio::fs::File;
 
 pub trait YuanShenID {
     type Object: YuanShenObject;
 
-    fn load<O>(&self, store: &O) -> impl Future<Output = Result<Self::Object, YsError>>
+    fn load<O>(&self, store: &O) -> impl std::future::Future<Output = Result<Self::Object, YsError>>
     where
         O: ObjectProxy + Send + Sync;
 }
@@ -19,30 +18,34 @@ pub trait YuanShenObject {
 }
 
 /// An object proxy that specifies various capabilities
+#[async_trait::async_trait]
 pub trait ObjectProxy {
-    fn has(&self, id: ObjectID) -> impl Future<Output = Result<bool, YsError>> + Send;
-    fn get_string(&self, text: TextFile) -> impl Future<Output = Result<String, YsError>> + Send;
-    fn get_string_file(&self, text: TextFile, file: &Path) -> impl Future<Output = Result<(), YsError>> + Send;
-    fn put_string(&self, text: &str) -> impl Future<Output = Result<TextFile, YsError>> + Send;
-    fn put_string_file(&self, file: &Path) -> impl Future<Output = Result<TextFile, YsError>> + Send;
-    fn get_buffer(&self, text: TextFile) -> impl Future<Output = Result<String, YsError>> + Send;
-    fn get_buffer_file(&self, text: TextFile, file: &mut File) -> impl Future<Output = Result<(), YsError>> + Send;
-    fn put_buffer(&self, text: &str) -> impl Future<Output = Result<TextFile, YsError>> + Send;
-    fn put_buffer_file(&self, file: &mut File) -> impl Future<Output = Result<TextFile, YsError>> + Send;
+    async fn has(&self, id: ObjectID) -> Result<bool, YsError>;
+    async fn get_string(&self, text: TextFile) -> Result<String, YsError>;
+    async fn get_string_file(&self, text: TextFile, file: &Path) -> Result<(), YsError>;
+    async fn put_string(&self, text: &str) -> Result<TextFile, YsError>;
+    async fn put_string_file(&self, file: &Path) -> Result<TextFile, YsError>;
+    async fn get_buffer(&self, text: TextFile) -> Result<String, YsError>;
+    async fn get_buffer_file(&self, text: TextFile, file: &mut File) -> Result<(), YsError>;
+    async fn put_buffer(&self, text: &str) -> Result<TextFile, YsError>;
+    async fn put_buffer_file(&self, file: &mut File) -> Result<TextFile, YsError>;
 
     // Added methods for typed access
-    fn get_typed<T: for<'de> serde::Deserialize<'de> + Send>(&self, id: ObjectID) -> impl Future<Output = Result<T, YsError>> + Send;
-    fn put_typed<T: serde::Serialize + YuanShenObject + Send + Sync>(&self, obj: &T) -> impl Future<Output = Result<ObjectID, YsError>> + Send;
+    async fn get_typed<T: for<'de> serde::Deserialize<'de> + Send>(&self, id: ObjectID) -> Result<T, YsError>;
+    async fn put_typed<T: serde::Serialize + YuanShenObject + Send + Sync>(&self, obj: &T) -> Result<ObjectID, YsError>;
 }
 
 pub trait ObjectStore: ObjectProxy {}
 impl<T: ObjectProxy> ObjectStore for T {}
 
+#[async_trait::async_trait]
 pub trait BranchProxy {
-    fn current(&self) -> impl Future<Output = Result<String, YsError>> + Send;
+    async fn current(&self) -> Result<String, YsError>;
 
-    fn has_branch(&self, branch: &str) -> impl Future<Output = Result<bool, YsError>> + Send;
+    async fn has_branch(&self, branch: &str) -> Result<bool, YsError>;
 
-    fn get_branch(&self, branch: &str) -> impl Future<Output = Result<ObjectID, YsError>> + Send;
-    fn set_branch(&self, branch: &str) -> impl Future<Output = Result<(), YsError>> + Send;
+    async fn get_branch(&self, branch: &str) -> Result<ObjectID, YsError>;
+    async fn set_branch(&self, branch: &str) -> Result<(), YsError>;
+
+    async fn list_branches(&self) -> Result<Vec<(String, ObjectID)>, YsError>;
 }

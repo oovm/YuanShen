@@ -29,6 +29,14 @@ impl YsError {
     pub fn not_implemented(message: &'static str) -> Self {
         Self { kind: Box::new(YsErrorKind::NotImplemented { message: message.to_string() }) }
     }
+
+    pub fn invalid_object<S: Into<String>>(message: S) -> Self {
+        Self { kind: Box::new(YsErrorKind::InvalidObject { message: message.into() }) }
+    }
+
+    pub fn missing_object(id: ObjectID) -> Self {
+        Self { kind: Box::new(YsErrorKind::MissingObject { id }) }
+    }
 }
 
 impl Error for YsError {}

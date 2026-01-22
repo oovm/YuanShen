@@ -12,7 +12,6 @@ exclude = ["package.json", "tests/**"]
 
 [dependencies]
 tokio = { workspace = true }
-tokio-postgres = { workspace = true }
 ys-types = { workspace = true }
 
 [dev-dependencies]

@@ -1,5 +1,11 @@
-use super::*;
+use ys_types::{
+    objects::{ObjectID, TextFile, commit_id::SnapShotData},
+    traits::ObjectProxy,
+    YsError, YsErrorKind, YuanShenObject,
+};
 use std::path::Path;
+use tokio::fs::File;
+use dashmap::DashMap;
 
 /// [ObjectProxy] in memory, all changes will disappear after the program exits, used for testing.
 #[derive(Clone, Debug)]
@@ -13,31 +19,38 @@ impl Default for MemoryObjectPool {
     }
 }
 
+#[async_trait::async_trait]
 impl ObjectProxy for MemoryObjectPool {
     async fn has(&self, id: ObjectID) -> Result<bool, YsError> {
         Ok(self.objects.contains_key(&id))
     }
 
     async fn get_string(&self, text: TextFile) -> Result<String, YsError> {
-        self.get_text_data(text.file_id)?.resolve(self).await
+        match self.objects.get(&text.file_id) {
+            Some(o) => {
+                let data: SnapShotData = serde_json::from_slice(o.as_slice())?;
+                // This is a simplified version, usually you'd resolve incremental data
+                Ok(data.content.unwrap_or_default())
+            },
+            None => Err(YsErrorKind::MissingObject { id: text.file_id })?,
+        }
     }
 
     async fn get_string_file(&self, text: TextFile, file: &Path) -> Result<(), YsError> {
         let string = self.get_string(text).await?;
-        truncate_write(file.to_path_buf(), string.as_bytes()).await
+        tokio::fs::write(file, string).await.map_err(|e| YsError::external_error(e))?;
+        Ok(())
     }
 
     async fn put_string(&self, text: &str) -> Result<TextFile, YsError> {
-        let id = text.as_bytes().object_id();
+        let id = text.object_id();
         self.objects.insert(id, text.as_bytes().to_vec());
         Ok(TextFile { file_id: id })
     }
 
     async fn put_string_file(&self, file: &Path) -> Result<TextFile, YsError> {
-        let buffer = read_to_string(file.to_path_buf()).await?;
-        let id = buffer.object_id();
-        self.objects.insert(id, buffer.as_bytes().to_vec());
-        Ok(TextFile { file_id: id })
+        let content = tokio::fs::read_to_string(file).await.map_err(|e| YsError::external_error(e))?;
+        self.put_string(&content).await
     }
 
     async fn get_buffer(&self, _: TextFile) -> Result<String, YsError> {
@@ -52,7 +65,7 @@ impl ObjectProxy for MemoryObjectPool {
         todo!()
     }
 
-    async fn put_buffer_file(&self, file: &mut File) -> Result<TextFile, YsError> {
+    async fn put_buffer_file(&self, _file: &mut File) -> Result<TextFile, YsError> {
         todo!()
     }
 
@@ -68,14 +81,5 @@ impl ObjectProxy for MemoryObjectPool {
         let bytes = serde_json::to_vec_pretty(obj)?;
         self.objects.insert(id, bytes);
         Ok(id)
-    }
-}
-
-impl MemoryObjectPool {
-    fn get_text_data(&self, id: ObjectID) -> Result<TextIncrementalData, YsError> {
-        Ok(match self.objects.get(&id) {
-            Some(o) => from_json(o.as_slice())?,
-            None => Err(YsErrorKind::MissingObject { id })?,
-        })
     }
 }
