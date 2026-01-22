@@ -1,5 +1,5 @@
 use crate::utils::{read_json, write_json};
-use crate::errors::{YsError, YsErrorKind};
+use crate::errors::YsError;
 use uuid::Uuid;
 use std::{
     fmt::{Display, Debug},

@@ -48,33 +48,8 @@ pub enum DifferenceStackItem {
 }
 
 impl DirectoryEntry {
-    pub fn difference(&self, other: &DirectoryEntry) -> Option<DifferenceEntry> {
+    pub fn difference(&self, _other: &DirectoryEntry) -> Option<DifferenceEntry> {
         todo!()
-        // use crate::snapshot::directory::DirectoryEntry::*;
-        // match (self, other) {
-        //     (Text(id), Text(id_)) => {
-        //         if id != id_ {
-        //             Some(DifferenceEntry::File(*id_))
-        //         }
-        //         else {
-        //             None
-        //         }
-        //     }
-        //     (Directory(_), Text(id)) => Some(DifferenceEntry::File(*id)),
-        //     (Text(_), Directory(d)) => Some(DifferenceEntry::Directory(Box::new(SnapShotDifference {
-        //         deleted: BTreeSet::new(),
-        //         added: d.root.clone(),
-        //         modified: BTreeMap::new(),
-        //     }))),
-        //     (Directory(d), Directory(d_)) => {
-        //         if d == d_ {
-        //             None
-        //         }
-        //         else {
-        //             Some(DifferenceEntry::Directory(Box::new(d.difference(d_))))
-        //         }
-        //     }
-        // }
     }
 }
 
@@ -109,66 +84,8 @@ impl SnapShotTree {
 }
 
 impl Display for SnapShotDifference {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        // let mut stack: Vec<DifferenceStackItem> = vec![];
-        // 
-        // for (path, dir_entry) in self.added.clone() {
-        //     stack.push(DifferenceStackItem::Added(PathBuf::from(path), dir_entry));
-        // }
-        // for (path, diff_entry) in self.modified.clone() {
-        //     stack.push(DifferenceStackItem::Modified(PathBuf::from(path), diff_entry));
-        // }
-        // for path in self.deleted.clone() {
-        //     stack.push(DifferenceStackItem::Deleted(PathBuf::from(path)));
-        // }
-        // 
-        // let mut diff_paths: BTreeMap<PathBuf, DifferenceStackType> = BTreeMap::new();
-        // 
-        // while let Some(diff_stack_item) = stack.pop() {
-        //     match diff_stack_item {
-        //         DifferenceStackItem::Deleted(path) => {
-        //             diff_paths.insert(path, DifferenceStackType::Deleted);
-        //         }
-        //         DifferenceStackItem::Added(path, dir_entry) => match dir_entry {
-        //             DirectoryEntry::Text(_) => {
-        //                 diff_paths.insert(path, DifferenceStackType::Added);
-        //             }
-        //             DirectoryEntry::Directory(dir) => {
-        //                 if dir.root.is_empty() {
-        //                     diff_paths.insert(path, DifferenceStackType::Added);
-        //                 }
-        //                 else {
-        //                     for (dir_name, dir_entry) in dir.root.clone() {
-        //                         stack.push(DifferenceStackItem::Added(path.join(dir_name), dir_entry));
-        //                     }
-        //                 }
-        //             }
-        //         },
-        //         DifferenceStackItem::Modified(path, diff_entry) => match diff_entry {
-        //             DifferenceEntry::File(_) => {
-        //                 diff_paths.insert(path, DifferenceStackType::Modified);
-        //             }
-        //             DifferenceEntry::Directory(diff) => {
-        //                 for (dir_name, dir_entry) in diff.added.clone() {
-        //                     stack.push(DifferenceStackItem::Added(path.join(dir_name), dir_entry))
-        //                 }
-        //                 for (dir_name, diff_entry) in diff.modified.clone() {
-        //                     stack.push(DifferenceStackItem::Modified(path.join(dir_name), diff_entry))
-        //                 }
-        //                 for dir_name in diff.deleted.clone() {
-        //                     stack.push(DifferenceStackItem::Deleted(path.join(dir_name)))
-        //                 }
-        //             }
-        //         },
-        //     }
-        // }
-        // 
-        // for (path, diff_item) in diff_paths {
-        //     writeln!(f, "{}", diff_item.character_symbol())?;
-        //     path.to_str().unwrap();
-        // }
-        todo!();
-        Ok(())
+    fn fmt(&self, _f: &mut Formatter<'_>) -> core::fmt::Result {
+        todo!()
     }
 }
 

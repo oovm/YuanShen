@@ -38,7 +38,7 @@ impl YuanShenID for TextFile {
 impl YuanShenID for TextIncrementalFile {
     type Object = TextIncrementalData;
 
-    async fn load<O>(&self, store: &O) -> Result<Self::Object, YsError>
+    async fn load<O>(&self, _store: &O) -> Result<Self::Object, YsError>
     where
         O: ObjectProxy,
     {
@@ -104,7 +104,7 @@ impl TextFile {
 
 impl TextIncrementalData {
     /// Resolve the text data
-    pub async fn resolve<O>(self, store: &O) -> Result<String, YsError>
+    pub async fn resolve<O>(self, _store: &O) -> Result<String, YsError>
     where
         O: ObjectProxy,
     {

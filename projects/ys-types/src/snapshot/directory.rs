@@ -89,53 +89,13 @@ impl SnapShotTree {
     /// Write out the directory structure at the given directory path.
     ///
     /// The target directory must already exist.
-    pub async fn write<Store: ObjectProxy>(&self, store: &Store, path: &Path) -> Result<(), YsError> {
+    pub async fn write<Store: ObjectProxy>(&self, _store: &Store, _path: &Path) -> Result<(), YsError> {
         todo!();
-        // if read_dir(path).is_ok() {
-        //     for (file_name, entry) in self.root.iter() {
-        //         match entry {
-        //             DirectoryEntry::Text(id) => {
-        //                 let v = store.get(*id).await?;
-        //                 let mut f = File::options().create(true).write(true).open(path.join(file_name))?;
-        //                 f.write(&v)?;
-        //             }
-        //             DirectoryEntry::Directory(dir) => {
-        //                 dir.write(store, PathBuf::from(path).join(file_name).as_path()).await?;
-        //             }
-        //         }
-        //     }
-        // }
-        Ok(())
     }
 }
 
 impl SnapShotTree {
-    pub fn new<Store: ObjectProxy>(dir: &Path, ignores: &IgnoreRules, store: &mut Store) -> Result<Self, YsError> {
+    pub fn new<Store: ObjectProxy>(_dir: &Path, _ignores: &IgnoreRules, _store: &mut Store) -> Result<Self, YsError> {
         todo!();
-        // let mut root = BTreeMap::new();
-        // for f in std::fs::read_dir(dir)? {
-        //     let dir_entry = f?;
-        //     if ignores.glob.contains(&dir_entry.file_name().into_string().unwrap()) {
-        //         continue;
-        //     }
-        //     let file_type = dir_entry.file_type()?;
-        //     if file_type.is_dir() {
-        //         let directory = SnapShotTree::new(dir_entry.path().as_path(), ignores, store)?;
-        //         root.insert(dir_entry.file_name().into_string().unwrap(), DirectoryEntry::Directory(Box::new(directory)));
-        //     }
-        //     else if file_type.is_file() {
-        //         let id = ObjectID::try_from(dir_entry.path().as_path())?;
-        //         root.insert(dir_entry.file_name().into_string().unwrap(), DirectoryEntry::Text(id));
-        //         let mut v = Vec::new();
-        //         let mut obj_file = File::options().read(true).open(dir_entry.path())?;
-        //         obj_file.read_to_end(&mut v)?;
-        //         todo!()
-        //         // store.insert(&v).await.map_err(Error::Store)?;
-        //     }
-        //     else {
-        //         eprintln!("TODO support things which aren't files or directories: {:?}", dir_entry.file_name());
-        //     }
-        // }
-        // Ok(SnapShotTree { root })
     }
 }

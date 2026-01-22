@@ -3,7 +3,6 @@ use crate::{
     YsError,
 };
 use std::path::Path;
-use tokio::fs::File;
 
 pub trait YuanShenID {
     type Object: YuanShenObject;
