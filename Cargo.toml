@@ -17,6 +17,7 @@ ys-driver = { path = "projects/ys-driver", version = "0.0.0" }
 ys-client = { path = "projects/ys-client", version = "0.0.0" }
 ys-server = { path = "projects/ys-server", version = "0.0.0" }
 ys-cli = { path = "projects/ys-cli", version = "0.0.1" }
+ys-ignore = { path = "projects/ys-ignore", version = "0.0.1" }
 ys-driver-git = { path = "projects/ys-driver-git", version = "0.0.0" }
 ys-driver-p4 = { path = "projects/ys-driver-p4", version = "0.0.0" }
 ys-driver-svn = { path = "projects/ys-driver-svn", version = "0.0.0" }
