@@ -1,6 +1,6 @@
 [package]
-name = "ys"
-version = "0.0.1"
+name = "ys-postgres"
+version = "0.0.0"
 authors = ["Aster <192607617@qq.com>"]
 description = "A modern source code and asset version management system"
 repository = "https://github.com/oovm/YuanShen"
@@ -10,30 +10,18 @@ license = "MPL-2.0"
 edition = "2021"
 exclude = ["package.json", "tests/**"]
 
-[[bin]]
-name = "ys"
-path = "app/main.rs"
-
-[[bin]]
-name = "源神"
-path = "app/zh_hans.rs"
-
 [dependencies]
-clap = { version = "4.2.5", features = ["derive"] }
-clap_builder = "4.5.2"
-tokio = { version = "1.37.0", features = ["full"] }
-serde_json = "1.0.115"
+tokio = { version = "1.37.0", features = [] }
+tokio-postgres = "0.7.10"
 
 [dependencies.ys-core]
 version = "0.0.*"
 path = "../ys-core"
 
-
-
-
 [dev-dependencies]
-
-
+tokio-test = "0.4.4"
+tokio = { version = "1.37.0", features = ["full"] }
+tempfile = "3.10.1"
 
 [features]
 default = []
