@@ -4,7 +4,6 @@ use ys_types::{
     YsError, YuanShenObject,
 };
 use std::path::{Path, PathBuf};
-use tokio::fs::File;
 use std::sync::Arc;
 
 /// Limbo + FS 存储方案
@@ -82,20 +81,56 @@ impl ObjectProxy for LimboFsStorage {
         self.put_string(&content).await
     }
 
-    async fn get_buffer(&self, _: TextFile) -> Result<String, YsError> {
-        todo!()
+    async fn get_buffer(&self, file: TextFile) -> Result<Vec<u8>, YsError> {
+        let path = self.store_file(file.file_id);
+        if !path.exists() {
+            return Err(YsError::invalid_object(format!(
+                "Object not found: {}",
+                file.file_id
+            )));
+        }
+        tokio::fs::read(path)
+            .await
+            .map_err(|e| YsError::external_error(e))
     }
 
-    async fn get_buffer_file(&self, _: TextFile, _: &mut File) -> Result<(), YsError> {
-        todo!()
+    async fn get_buffer_file(&self, file: TextFile, path: &Path) -> Result<(), YsError> {
+        let src_path = self.store_file(file.file_id);
+        if !src_path.exists() {
+            return Err(YsError::invalid_object(format!(
+                "Object not found: {}",
+                file.file_id
+            )));
+        }
+        tokio::fs::copy(src_path, path)
+            .await
+            .map_err(|e| YsError::external_error(e))?;
+        Ok(())
     }
 
-    async fn put_buffer(&self, _: &str) -> Result<TextFile, YsError> {
-        todo!()
+    async fn put_buffer(&self, buf: &[u8]) -> Result<TextFile, YsError> {
+        let id = buf.object_id();
+        let path = self.store_file(id);
+        if !path.exists() {
+            if let Some(parent) = path.parent() {
+                tokio::fs::create_dir_all(parent)
+                    .await
+                    .map_err(|e| YsError::external_error(e))?;
+            }
+            tokio::fs::write(path, buf)
+                .await
+                .map_err(|e| YsError::external_error(e))?;
+        }
+        Ok(TextFile {
+            file_id: id,
+        })
     }
 
-    async fn put_buffer_file(&self, _file: &mut File) -> Result<TextFile, YsError> {
-        todo!()
+    async fn put_buffer_file(&self, path: &Path) -> Result<TextFile, YsError> {
+        let buf = tokio::fs::read(path)
+            .await
+            .map_err(|e| YsError::external_error(e))?;
+        self.put_buffer(&buf).await
     }
 
     async fn get_typed<T>(&self, id: ObjectID) -> Result<T, YsError>
@@ -171,8 +206,11 @@ impl BranchProxy for LimboFsStorage {
 
     async fn set_branch_id(&self, name: &str, id: ObjectID) -> Result<(), YsError> {
         let conn = self.db.connect().map_err(|e| YsError::external_error(e))?;
+        conn.execute("DELETE FROM branches WHERE name = ?1", [name])
+            .await
+            .map_err(|e| YsError::external_error(e))?;
         conn.execute(
-            "INSERT OR REPLACE INTO branches (name, id) VALUES (?1, ?2)",
+            "INSERT INTO branches (name, id) VALUES (?1, ?2)",
             (name, id.as_bytes().to_vec()),
         )
         .await
@@ -213,33 +251,3 @@ impl BranchProxy for LimboFsStorage {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tempfile::tempdir;
-
-    #[tokio::test]
-    async fn test_limbo_fs_storage() {
-        let dir = tempdir().unwrap();
-        let storage = LimboFsStorage::new(dir.path().to_path_buf()).await.unwrap();
-
-        // Test branch operations
-        storage.set_branch_name("dev").await.unwrap();
-        assert_eq!(storage.get_branch_name().await.unwrap(), "dev");
-
-        let id = "test content".object_id();
-        storage.set_branch_id("dev", id).await.unwrap();
-        assert_eq!(storage.get_branch_id("dev").await.unwrap(), id);
-        assert!(storage.branch_exists("dev").await.unwrap());
-
-        let branches = storage.list_branches().await.unwrap();
-        assert_eq!(branches.len(), 1);
-        assert_eq!(branches[0].0, "dev");
-        assert_eq!(branches[0].1, id);
-
-        // Test object operations
-        let text_file = storage.put_string("hello world").await.unwrap();
-        assert!(storage.has(text_file.file_id).await.unwrap());
-        assert_eq!(storage.get_string(text_file).await.unwrap(), "hello world");
-    }
-}

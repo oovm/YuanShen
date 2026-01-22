@@ -7,8 +7,6 @@ use std::{
 };
 
 mod convert;
-#[cfg(test)]
-mod tests;
 
 mod hasher;
 

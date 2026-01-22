@@ -3,7 +3,7 @@ fn ready() {
     println!("it works!")
 }
 
-const YUAN_SHEN: &[u8] = "源神, 启动!".as_bytes();
+// const YUAN_SHEN: &[u8] = "源神, 启动!".as_bytes();
 
 // #[tokio::test]
 // async fn test_memory_object_store() {

@@ -4,7 +4,6 @@ use ys_types::{
     YsError, YuanShenObject,
 };
 use std::path::{Path, PathBuf};
-use tokio::fs::File;
 
 /// 本地文件系统对象储存
 #[derive(Debug, Clone)]
@@ -61,19 +60,19 @@ impl ObjectProxy for LocalDotYuanShen {
         self.put_string(&content).await
     }
 
-    async fn get_buffer(&self, _: TextFile) -> Result<String, YsError> {
+    async fn get_buffer(&self, _: TextFile) -> Result<Vec<u8>, YsError> {
         todo!()
     }
 
-    async fn get_buffer_file(&self, _: TextFile, _: &mut File) -> Result<(), YsError> {
+    async fn get_buffer_file(&self, _: TextFile, _: &Path) -> Result<(), YsError> {
         todo!()
     }
 
-    async fn put_buffer(&self, _: &str) -> Result<TextFile, YsError> {
+    async fn put_buffer(&self, _: &[u8]) -> Result<TextFile, YsError> {
         todo!()
     }
 
-    async fn put_buffer_file(&self, _file: &mut File) -> Result<TextFile, YsError> {
+    async fn put_buffer_file(&self, _: &Path) -> Result<TextFile, YsError> {
         todo!()
     }
 

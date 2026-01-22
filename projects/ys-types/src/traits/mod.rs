@@ -24,10 +24,10 @@ pub trait ObjectProxy: Send + Sync {
     async fn get_string_file(&self, text: TextFile, file: &Path) -> Result<(), YsError>;
     async fn put_string(&self, text: &str) -> Result<TextFile, YsError>;
     async fn put_string_file(&self, file: &Path) -> Result<TextFile, YsError>;
-    async fn get_buffer(&self, text: TextFile) -> Result<String, YsError>;
-    async fn get_buffer_file(&self, text: TextFile, file: &mut File) -> Result<(), YsError>;
-    async fn put_buffer(&self, text: &str) -> Result<TextFile, YsError>;
-    async fn put_buffer_file(&self, file: &mut File) -> Result<TextFile, YsError>;
+    async fn get_buffer(&self, text: TextFile) -> Result<Vec<u8>, YsError>;
+    async fn get_buffer_file(&self, text: TextFile, file: &Path) -> Result<(), YsError>;
+    async fn put_buffer(&self, buf: &[u8]) -> Result<TextFile, YsError>;
+    async fn put_buffer_file(&self, file: &Path) -> Result<TextFile, YsError>;
 
     // Added methods for typed access
     async fn get_typed<T>(&self, id: ObjectID) -> Result<T, YsError>
