@@ -1,11 +1,11 @@
 use super::*;
 use crate::traits::YuanShenObject;
-
-impl From<blake3::Hash> for ObjectID {
-    fn from(value: blake3::Hash) -> Self {
-        Self { hash256: value }
-    }
-}
+use crate::errors::{YsError, YsErrorKind};
+use uuid::Uuid;
+use std::str::FromStr;
+use std::io::Read;
+use std::path::Path;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 impl<T: YuanShenObject> From<T> for ObjectID {
     fn from(value: T) -> Self {
@@ -13,24 +13,29 @@ impl<T: YuanShenObject> From<T> for ObjectID {
     }
 }
 
+fn content_to_uuid(content: &[u8]) -> ObjectID {
+    let namespace = Uuid::NAMESPACE_DNS;
+    ObjectID(Uuid::new_v5(&namespace, content))
+}
+
 impl YuanShenObject for String {
     fn object_id(&self) -> ObjectID {
-        ObjectID { hash256: blake3::hash(self.as_bytes()) }
+        content_to_uuid(self.as_bytes())
     }
 }
 impl<'a> YuanShenObject for &'a str {
     fn object_id(&self) -> ObjectID {
-        ObjectID { hash256: blake3::hash(self.as_bytes()) }
+        content_to_uuid(self.as_bytes())
     }
 }
 impl YuanShenObject for Vec<u8> {
     fn object_id(&self) -> ObjectID {
-        ObjectID { hash256: blake3::hash(self) }
+        content_to_uuid(self)
     }
 }
 impl<'a> YuanShenObject for &'a [u8] {
     fn object_id(&self) -> ObjectID {
-        ObjectID { hash256: blake3::hash(self) }
+        content_to_uuid(self)
     }
 }
 
@@ -40,7 +45,7 @@ impl TryFrom<std::fs::File> for ObjectID {
     fn try_from(mut f: std::fs::File) -> Result<Self, Self::Error> {
         let mut vec = Vec::new();
         f.read_to_end(&mut vec)?;
-        Ok((&vec).object_id())
+        Ok(content_to_uuid(&vec))
     }
 }
 
@@ -51,18 +56,9 @@ impl<'a> TryFrom<&'a Path> for ObjectID {
         let path = std::fs::File::options().read(true).open(p);
         let mut buffer = vec![];
         match path.and_then(|mut o| o.read_to_end(&mut buffer)) {
-            Ok(_) => Ok(buffer.object_id()),
+            Ok(_) => Ok(content_to_uuid(&buffer)),
             Err(e) => Err(YsError::path_error(e, p.to_path_buf())),
         }
-    }
-}
-
-impl Serialize for ObjectID {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.hash256.to_string().serialize(serializer)
     }
 }
 
@@ -70,22 +66,9 @@ impl FromStr for ObjectID {
     type Err = YsError;
 
     fn from_str(s: &str) -> Result<Self, YsError> {
-        match blake3::Hash::from_hex(&s) {
-            Ok(hash256) => Ok(hash256.into()),
+        match Uuid::from_str(s) {
+            Ok(uuid) => Ok(ObjectID(uuid)),
             Err(e) => Err(YsErrorKind::InvalidObject { message: e.to_string() })?,
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for ObjectID {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        match blake3::Hash::from_hex(&s) {
-            Ok(hash256) => Ok(hash256.into()),
-            Err(e) => Err(serde::de::Error::custom(e)),
         }
     }
 }

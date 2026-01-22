@@ -56,12 +56,17 @@ where
     Ok(buffer)
 }
 
-pub fn hash_json<A>(thing: &A) -> Result<Hash, YsError>
+use uuid::Uuid;
+use crate::objects::ObjectID;
+
+pub fn hash_json<A>(thing: &A) -> Result<ObjectID, YsError>
 where
     A: Serialize,
 {
     let buffer = vec_json(thing)?;
-    Ok(blake3::hash(&buffer))
+    // Use UUID v5 for content-addressing
+    let namespace = Uuid::NAMESPACE_DNS; // Or a custom namespace
+    Ok(ObjectID(Uuid::new_v5(&namespace, &buffer)))
 }
 
 pub async fn truncate_write(path: PathBuf, bytes: &[u8]) -> Result<(), YsError> {

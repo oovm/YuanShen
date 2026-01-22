@@ -29,7 +29,7 @@ impl InitializeConfig {
         self.generate_branches()?;
         self.generate_configs()?;
         // 创建初始提交
-        let directory = SnapShotTree::default();
+        let _directory = SnapShotTree::default();
         // let directory = store.put_typed(&directory).await?;
         // let snapshot = Commit {
         //     datetime: SystemTime::now(),
@@ -39,7 +39,7 @@ impl InitializeConfig {
         // extra: SnapShotData { kind: 0, message: "Project initialized!".to_string(), authors: Default::default() },
         // let snapshot_id = store.put_typed(&snapshot).await?;
         // write_json(&snapshot_id, &root.join("branches").join(self.initial_branch.as_ref()))?;
-        todo!();
+        // todo!();
         Ok(DotYuanShenClient { dot_root: root, dot_config: config })
     }
     fn generate_branches(&self) -> std::io::Result<()> {

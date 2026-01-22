@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
-use crate::objects::{AuthorID, ObjectID};
+use crate::objects::tenant_id::TenantID;
+use crate::objects::ObjectID;
 use crate::traits::YuanShenObject;
 use crate::utils::hash_json;
 
@@ -8,7 +9,7 @@ use crate::utils::hash_json;
 pub struct SnapShotData {
     pub kind: u64,
     pub message: String,
-    pub authors: BTreeSet<AuthorID>,
+    pub tenants: BTreeSet<TenantID>,
 }
 
 /// 快照
