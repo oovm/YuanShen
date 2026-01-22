@@ -21,6 +21,7 @@ pub use crate::{
         directory::{DirectoryEntry, SnapShotTree},
         initialize,
     },
-    traits::{BranchProxy, ObjectProxy, YuanShenID, YuanShenObject},
+    objects::{ObjectID, IgnoreRules, commit_id::{Commit, SnapShotData}},
+    traits::{BranchProxy, ObjectProxy, ObjectStore, YuanShenID, YuanShenObject},
     utils::async_test,
 };

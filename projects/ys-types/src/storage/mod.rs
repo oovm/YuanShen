@@ -5,6 +5,7 @@ use crate::{
     ObjectProxy, YsError, YsErrorKind, YuanShenObject,
 };
 use dashmap::DashMap;
+pub use database::DatabaseObjectStore;
 pub use file_system::LocalDotYuanShen;
 pub use in_memory::MemoryObjectPool;
 use std::{
@@ -15,3 +16,4 @@ use tokio::{fs::File, io::AsyncWriteExt};
 
 mod file_system;
 mod in_memory;
+pub mod database;

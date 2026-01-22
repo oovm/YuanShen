@@ -1,9 +1,10 @@
+use serde::Serialize;
 use crate::objects::ObjectID;
 use super::*;
 
 /// SnapShotDifference 结构体定义了快照之间的差异
 /// 包括删除的项、新增的项以及修改的项。每个项都通过其对应的路径进行标识。
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Serialize)]
 pub struct SnapShotDifference {
     /// 被删除的文件或目录路径集合
     pub deleted: BTreeSet<String>,
@@ -15,7 +16,7 @@ pub struct SnapShotDifference {
 
 /// DifferenceEntry 枚举定义了差异条目的类型，可以是文件或目录。
 /// 文件类型包含一个 ObjectID，目录类型包含一个嵌套的 SnapShotDifference 结构。
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Serialize)]
 pub enum DifferenceEntry {
     /// 文件条目
     File(ObjectID),

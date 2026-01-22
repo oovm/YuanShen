@@ -1,6 +1,6 @@
 use clap::Args;
 use std::env::current_dir;
-use ys_core::{
+use ys_types::{
     initialize::{DotYuanShenClient, YuanShenClient},
     ObjectID, YsError,
 };

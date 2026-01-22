@@ -1,6 +1,6 @@
 use clap::Args;
 use std::{borrow::Cow, env::current_dir};
-use ys_core::{initialize::InitializeConfig, IgnoreRules, YsError};
+use ys_types::{initialize::InitializeConfig, IgnoreRules, YsError};
 
 #[derive(Debug, Args)]
 pub struct YuanShenInitialize {

@@ -21,6 +21,14 @@ impl YsError {
     pub fn path_error<P: Into<PathBuf>>(error: std::io::Error, path: P) -> Self {
         Self { kind: Box::new(YsErrorKind::IO { error, path: Some(path.into()) }) }
     }
+
+    pub fn external_error<E: Error + Send + Sync + 'static>(error: E) -> Self {
+        Self { kind: Box::new(YsErrorKind::External { message: error.to_string() }) }
+    }
+
+    pub fn not_implemented(message: &'static str) -> Self {
+        Self { kind: Box::new(YsErrorKind::NotImplemented { message: message.to_string() }) }
+    }
 }
 
 impl Error for YsError {}
@@ -60,24 +68,52 @@ pub enum YsErrorKind {
     InvalidObject {
         message: String,
     },
+    External {
+        message: String,
+    },
+    NotImplemented {
+        message: String,
+    },
 }
 
 impl Display for YsErrorKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::IO { .. } => {
-                todo!()
+            Self::IO { error, path } => {
+                if let Some(path) = path {
+                    write!(f, "IO 错误 at {:?}: {}", path, error)
+                } else {
+                    write!(f, "IO 错误: {}", error)
+                }
             }
-            Self::Decode { .. } => {
-                todo!()
+            Self::Decode { message } => {
+                write!(f, "解码错误: {}", message)
             }
             Self::MissingObject { id } => {
                 write!(f, "找不到对象: {}", id)
             }
-            Self::InvalidObject { .. } => {
-                todo!()
+            Self::InvalidObject { message } => {
+                write!(f, "无效对象: {}", message)
+            }
+            Self::External { message } => {
+                write!(f, "外部错误: {}", message)
+            }
+            Self::NotImplemented { message } => {
+                write!(f, "尚未实现: {}", message)
             }
         }
+    }
+}
+
+impl From<std::io::Error> for YsError {
+    fn from(error: std::io::Error) -> Self {
+        YsErrorKind::IO { error, path: None }.into()
+    }
+}
+
+impl From<serde_json::Error> for YsError {
+    fn from(error: serde_json::Error) -> Self {
+        YsErrorKind::Decode { message: error.to_string() }.into()
     }
 }
 
@@ -96,18 +132,6 @@ impl From<YsErrorKind> for YsError {
 impl From<Infallible> for YsError {
     fn from(_: Infallible) -> Self {
         unreachable!()
-    }
-}
-
-impl From<std::io::Error> for YsError {
-    fn from(error: std::io::Error) -> Self {
-        YsErrorKind::IO { error, path: None }.into()
-    }
-}
-
-impl From<serde_json::Error> for YsError {
-    fn from(error: serde_json::Error) -> Self {
-        YsErrorKind::Decode { message: error.to_string() }.into()
     }
 }
 

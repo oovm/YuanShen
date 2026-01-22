@@ -1,8 +1,8 @@
 use clap::Args;
 use std::{env::current_dir, process::exit};
-use ys_core::{
+use ys_types::{
     initialize::{DotYuanShenClient, YuanShenClient},
-    ObjectID, ObjectStore, Commit, SnapShotTree, YsError,
+    ObjectID, ObjectProxy, ObjectStore, Commit, SnapShotTree, YsError,
 };
 
 #[derive(Debug, Args)]

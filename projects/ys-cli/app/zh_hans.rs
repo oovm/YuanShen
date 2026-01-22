@@ -1,14 +1,10 @@
-use clap::{ArgMatches, Args, FromArgMatches, Parser, Subcommand};
-use clap_builder::{
-    builder::{_AutoValueParser, via_prelude::_ValueParserViaParse},
-    Command,
-};
+use clap::{ArgMatches, Args, Command, FromArgMatches, Parser, Subcommand, builder::ValueParser};
 use std::{env::current_dir, fmt::Debug, io::stdout};
-use ys_core::{
+use ys_types::{
     initialize::{DotYuanShenClient, YuanShenClient},
-    IgnoreRules, ObjectID, ObjectStore, Commit, SnapShotTree, YsError,
+    IgnoreRules, ObjectID, ObjectProxy, ObjectStore, Commit as YsCommit, SnapShotTree, YsError,
 };
-use yuan_shen::*;
+use ys_cli::*;
 
 #[derive(Parser, Debug)]
 struct YuanShen {
@@ -197,7 +193,7 @@ impl Subcommand for YsCommand {
         .subcommand(Command::new("branch"))
         .subcommand(YuanShenCommit::augment_args(Command::new("stash")))
         .subcommand(Command::new("逆化").about("这些对象有点太城市化了").long_about(None).alias("gc").alias("garbage-collect"))
-        .external_subcommand_value_parser(_AutoValueParser::<String>::new().value_parser())
+        .external_subcommand_value_parser(ValueParser::new(|s: &str| Ok::<String, std::convert::Infallible>(s.to_string())))
     }
 
     fn augment_subcommands_for_update(cmd: Command) -> Command {
@@ -226,8 +222,8 @@ pub async fn main() -> Result<(), YsError> {
             let old_tip: ObjectID = dot_rev.get_branch_id(&branch).unwrap();
             let ignores: IgnoreRules = dot_rev.ignores().unwrap();
             let directory = SnapShotTree::new(dir.as_path(), &ignores, &mut store).unwrap();
-            let snapshot: Commit = store.get_typed(old_tip).await.unwrap();
-            let old_directory: SnapShotTree = store.get_typed(snapshot.directory).await.unwrap();
+            let snapshot: YsCommit = store.get_typed(old_tip).await.unwrap();
+            let old_directory: SnapShotTree = store.get_typed(snapshot.tree).await.unwrap();
             serde_json::to_writer_pretty(stdout(), &old_directory.difference(&directory)).unwrap();
         }
         Commit(sub) => sub.commit().await.unwrap(),

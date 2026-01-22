@@ -52,8 +52,22 @@ impl ObjectProxy for MemoryObjectPool {
         todo!()
     }
 
-    async fn put_buffer_file(&self, _: &mut File) -> Result<TextFile, YsError> {
+    async fn put_buffer_file(&self, file: &mut File) -> Result<TextFile, YsError> {
         todo!()
+    }
+
+    async fn get_typed<T: for<'de> serde::Deserialize<'de> + Send>(&self, id: ObjectID) -> Result<T, YsError> {
+        match self.objects.get(&id) {
+            Some(o) => Ok(serde_json::from_slice(o.as_slice())?),
+            None => Err(YsErrorKind::MissingObject { id })?,
+        }
+    }
+
+    async fn put_typed<T: serde::Serialize + YuanShenObject + Send + Sync>(&self, obj: &T) -> Result<ObjectID, YsError> {
+        let id = obj.object_id();
+        let bytes = serde_json::to_vec_pretty(obj)?;
+        self.objects.insert(id, bytes);
+        Ok(id)
     }
 }
 

@@ -11,17 +11,14 @@ edition = "2021"
 exclude = ["package.json", "tests/**"]
 
 [dependencies]
-tokio = { version = "1.37.0", features = [] }
-tokio-postgres = "0.7.10"
-
-[dependencies.ys-core]
-version = "0.0.*"
-path = "../ys-types"
+tokio = { workspace = true, features = ["full"] }
+ys-types = { workspace = true }
+ys-driver = { workspace = true }
 
 [dev-dependencies]
-tokio-test = "0.4.4"
-tokio = { version = "1.37.0", features = ["full"] }
-tempfile = "3.10.1"
+tokio-test = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tempfile = { workspace = true }
 
 [features]
 default = []

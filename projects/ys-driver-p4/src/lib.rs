@@ -1,29 +1,29 @@
+use std::path::Path;
+use ys_types::{ObjectID, YsError};
+use ys_driver::Driver;
 
+pub struct P4Driver;
 
-use tokio_postgres::{NoTls, Error};
+impl P4Driver {
+    pub fn new() -> Self {
+        Self
+    }
+}
 
-#[tokio::test] // By default, tokio_postgres uses the tokio crate as its runtime.
-async fn main() -> Result<(), Error> {
-    // Connect to the database.
-    let (client, connection) =
-        tokio_postgres::connect("host=localhost user=postgres", NoTls).await?;
+impl Driver for P4Driver {
+    fn name(&self) -> &'static str {
+        "p4"
+    }
 
-    // The connection object performs the actual communication with the database,
-    // so spawn it off to run on its own.
-    tokio::spawn(async move {
-        if let Err(e) = connection.await {
-            eprintln!("connection error: {}", e);
-        }
-    });
+    async fn clone(&self, _url: &str, _local_path: &Path) -> Result<(), YsError> {
+        Err(YsError::not_implemented("P4Driver::clone"))
+    }
 
-    // Now we can execute a simple statement that just returns its parameter.
-    let rows = client
-        .query("SELECT $1::TEXT", &[&"hello world"])
-        .await?;
+    async fn fetch(&self, _url: &str) -> Result<ObjectID, YsError> {
+        Err(YsError::not_implemented("P4Driver::fetch"))
+    }
 
-    // And then check that we got back the same string we sent over.
-    let value: &str = rows[0].get(0);
-    assert_eq!(value, "hello world");
-
-    Ok(())
+    async fn push(&self, _url: &str, _commit_id: ObjectID) -> Result<(), YsError> {
+        Err(YsError::not_implemented("P4Driver::push"))
+    }
 }

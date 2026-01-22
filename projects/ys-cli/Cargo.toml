@@ -1,5 +1,5 @@
 [package]
-name = "ys"
+name = "ys-cli"
 version = "0.0.1"
 authors = ["Aster <192607617@qq.com>"]
 description = "A modern source code and asset version management system"
@@ -19,14 +19,11 @@ name = "源神"
 path = "app/zh_hans.rs"
 
 [dependencies]
-clap = { version = "4.2.5", features = ["derive"] }
-clap_builder = "4.5.2"
-tokio = { version = "1.37.0", features = ["full"] }
-serde_json = "1.0.115"
-
-[dependencies.ys-core]
-version = "0.0.*"
-path = "../ys-types"
+clap = { workspace = true }
+clap_builder = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+serde_json = { workspace = true }
+ys-types = { workspace = true }
 
 
 

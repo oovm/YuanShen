@@ -1,10 +1,10 @@
 use clap::{ Parser, Subcommand};
 use std::{env::current_dir, fmt::Debug, io::stdout};
-use ys_core::{
+use ys_types::{
     initialize::{DotYuanShenClient, YuanShenClient},
-    IgnoreRules, ObjectID, ObjectStore, Commit, SnapShotTree, YsError,
+    IgnoreRules, ObjectID, ObjectProxy, ObjectStore, Commit as YsCommit, SnapShotTree, YsError,
 };
-use yuan_shen::*;
+use ys_cli::*;
 
 #[derive(Parser, Debug)]
 struct YuanShen {
@@ -51,8 +51,8 @@ pub async fn main() -> Result<(), YsError> {
             let old_tip: ObjectID = dot_rev.get_branch_id(&branch).unwrap();
             let ignores: IgnoreRules = dot_rev.ignores().unwrap();
             let directory = SnapShotTree::new(dir.as_path(), &ignores, &mut store).unwrap();
-            let snapshot: Commit = store.get_typed(old_tip).await.unwrap();
-            let old_directory: SnapShotTree = store.get_typed(snapshot.directory).await.unwrap();
+            let snapshot: YsCommit = store.get_typed(old_tip).await.unwrap();
+            let old_directory: SnapShotTree = store.get_typed(snapshot.tree).await.unwrap();
             serde_json::to_writer_pretty(stdout(), &old_directory.difference(&directory)).unwrap();
         }
         Commit(sub) => sub.commit().await.unwrap(),

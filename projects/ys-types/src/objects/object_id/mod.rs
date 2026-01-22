@@ -3,6 +3,7 @@ use crate::utils::{read_json, write_json, WriteHashID};
 use std::{
     fmt::Formatter,
     hash::{Hash, Hasher},
+    io,
 };
 
 mod convert;
@@ -31,6 +32,15 @@ pub struct BranchJson {
 }
 
 impl ObjectID {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, YsError> {
+        let hash: [u8; 32] = bytes.try_into().map_err(|_| YsError::external_error(io::Error::new(io::ErrorKind::InvalidData, "Invalid ObjectID length")))?;
+        Ok(Self { hash256: blake3::Hash::from(hash) })
+    }
+
+    pub fn as_bytes(&self) -> &[u8; 32] {
+        self.hash256.as_bytes()
+    }
+
     pub fn read_branch(dot_ys: &Path, name: &str) -> Result<Self, YsError> {
         let file = dot_ys.join("branches").join(name);
         let json = read_json::<BranchJson>(&file)?;

@@ -1,29 +1,69 @@
+use tokio::net::TcpStream;
+use tokio_util::codec::Framed;
+use futures::{StreamExt, SinkExt};
+use ys_types::{YsError, storage::database::DatabaseObjectStore};
+use ys_gateway::Gateway;
+use ys_protocol::git::{PktLine, PktLineCodec};
+use bytes::Bytes;
 
+pub struct GitGateway {
+    store: DatabaseObjectStore,
+}
 
-use tokio_postgres::{NoTls, Error};
+impl GitGateway {
+    pub fn new(store: DatabaseObjectStore) -> Self {
+        Self { store }
+    }
 
-#[tokio::test] // By default, tokio_postgres uses the tokio crate as its runtime.
-async fn main() -> Result<(), Error> {
-    // Connect to the database.
-    let (client, connection) =
-        tokio_postgres::connect("host=localhost user=postgres", NoTls).await?;
-
-    // The connection object performs the actual communication with the database,
-    // so spawn it off to run on its own.
-    tokio::spawn(async move {
-        if let Err(e) = connection.await {
-            eprintln!("connection error: {}", e);
+    /// 处理 Git 引用发现 (v1)
+    async fn handle_ref_discovery(&self, framed: &mut Framed<TcpStream, PktLineCodec>) -> Result<(), YsError> {
+        let branches = self.store.list_branches().await?;
+        
+        if branches.is_empty() {
+            // 如果没有分支，至少发送一个 flush
+            framed.send(PktLine::Flush).await.map_err(|e| YsError::external_error(e))?;
+            return Ok(());
         }
-    });
 
-    // Now we can execute a simple statement that just returns its parameter.
-    let rows = client
-        .query("SELECT $1::TEXT", &[&"hello world"])
-        .await?;
+        let mut first = true;
+        for (name, id) in branches {
+            let line = if first {
+                // 第一个引用包含能力声明
+                first = false;
+                format!("{} refs/heads/{}\0multi_ack side-band-64k agent=ys-git\n", id, name)
+            } else {
+                format!("{} refs/heads/{}\n", id, name)
+            };
+            framed.send(PktLine::Data(Bytes::from(line))).await.map_err(|e| YsError::external_error(e))?;
+        }
 
-    // And then check that we got back the same string we sent over.
-    let value: &str = rows[0].get(0);
-    assert_eq!(value, "hello world");
+        framed.send(PktLine::Flush).await.map_err(|e| YsError::external_error(e))?;
+        Ok(())
+    }
+}
 
-    Ok(())
+impl Gateway for GitGateway {
+    fn name(&self) -> &'static str {
+        "git"
+    }
+
+    async fn handle(&self, socket: TcpStream) -> Result<(), YsError> {
+        let mut framed = Framed::new(socket, PktLineCodec);
+
+        // 1. 接收客户端请求 (例如 "git-upload-pack /repo.git\0host=localhost\0")
+        if let Some(result) = framed.next().await {
+            let pkt = result.map_err(|e| YsError::external_error(e))?;
+            if let PktLine::Data(data) = pkt {
+                let request = String::from_utf8_lossy(&data);
+                println!("Git request: {}", request);
+                
+                // 简单的路由逻辑
+                if request.contains("git-upload-pack") {
+                    self.handle_ref_discovery(&mut framed).await?;
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
