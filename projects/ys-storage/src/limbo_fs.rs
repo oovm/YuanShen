@@ -142,8 +142,11 @@ impl BranchProxy for LimboFsStorage {
 
     async fn set_branch_name(&self, name: &str) -> Result<(), YsError> {
         let conn = self.db.connect().map_err(|e| YsError::external_error(e))?;
+        conn.execute("DELETE FROM config WHERE key = 'current_branch'", ())
+            .await
+            .map_err(|e| YsError::external_error(e))?;
         conn.execute(
-            "INSERT OR REPLACE INTO config (key, value) VALUES ('current_branch', ?1)",
+            "INSERT INTO config (key, value) VALUES ('current_branch', ?1)",
             [name],
         )
         .await
