@@ -18,6 +18,7 @@ futures = { workspace = true }
 ys-types = { workspace = true }
 ys-gateway = { workspace = true }
 ys-protocol = { workspace = true }
+ys-storage = { workspace = true }
 
 [dev-dependencies]
 tokio-test = { workspace = true }
