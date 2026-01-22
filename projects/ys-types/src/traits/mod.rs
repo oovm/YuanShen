@@ -43,12 +43,21 @@ pub trait ObjectStore: ObjectProxy {}
 impl<T: ObjectProxy> ObjectStore for T {}
 
 pub trait BranchProxy: Send + Sync {
-    async fn current(&self) -> Result<String, YsError>;
+    /// Get the name of the current branch
+    async fn get_branch_name(&self) -> Result<String, YsError>;
 
-    async fn has_branch(&self, branch: &str) -> Result<bool, YsError>;
+    /// Set the current branch name
+    async fn set_branch_name(&self, name: &str) -> Result<(), YsError>;
 
-    async fn get_branch(&self, branch: &str) -> Result<ObjectID, YsError>;
-    async fn set_branch(&self, branch: &str) -> Result<(), YsError>;
+    /// Get the tip (ObjectID) of a branch
+    async fn get_branch_id(&self, name: &str) -> Result<ObjectID, YsError>;
 
+    /// Set the tip (ObjectID) of a branch
+    async fn set_branch_id(&self, name: &str, id: ObjectID) -> Result<(), YsError>;
+
+    /// Check if a branch exists
+    async fn branch_exists(&self, name: &str) -> Result<bool, YsError>;
+
+    /// List all branches and their tips
     async fn list_branches(&self) -> Result<Vec<(String, ObjectID)>, YsError>;
 }

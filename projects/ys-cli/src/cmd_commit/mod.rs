@@ -19,7 +19,7 @@ impl YuanShenCommit {
     pub async fn commit(self) -> Result<(), YsError> {
         let dir = current_dir()?;
         let dot_rev = DotYuanShenClient::open(&dir).unwrap();
-        let mut store = dot_rev.store().unwrap();
+        let mut store = ys_storage::LocalDotYuanShen::new(dir.join(".ys")).unwrap();
         let branch: String = dot_rev.get_branch_name().unwrap();
         let old_tip: ObjectID = dot_rev.get_branch_id(&branch)?;
         let ignores: IgnoreRules = dot_rev.ignores().unwrap();

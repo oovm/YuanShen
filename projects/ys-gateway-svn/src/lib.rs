@@ -1,6 +1,7 @@
 use tokio::net::TcpStream;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use ys_types::{YsError, traits::{ObjectProxy, BranchProxy}};
+use ys_types::YsError;
+use ys_storage::StorageBackend;
 use ys_gateway::Gateway;
 
 pub struct SvnGateway<S> {
@@ -16,7 +17,7 @@ pub enum SvnItem {
 
 impl<S> SvnGateway<S> 
 where 
-    S: ObjectProxy + BranchProxy + Send + Sync + 'static
+    S: StorageBackend + 'static
 {
     pub fn new(store: S) -> Self {
         Self { store }
@@ -161,7 +162,7 @@ where
 
 impl<S> Gateway for SvnGateway<S> 
 where 
-    S: ObjectProxy + BranchProxy + Send + Sync + 'static
+    S: StorageBackend + 'static
 {
     fn name(&self) -> &'static str {
         "svn"

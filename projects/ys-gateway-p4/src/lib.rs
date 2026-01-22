@@ -1,5 +1,6 @@
 use tokio::net::TcpStream;
-use ys_types::{YsError, traits::{ObjectProxy, BranchProxy}};
+use ys_types::YsError;
+use ys_storage::StorageBackend;
 use ys_gateway::Gateway;
 
 pub struct P4Gateway<S> {
@@ -8,7 +9,7 @@ pub struct P4Gateway<S> {
 
 impl<S> P4Gateway<S> 
 where 
-    S: ObjectProxy + BranchProxy + Send + Sync + 'static
+    S: StorageBackend + 'static
 {
     pub fn new(store: S) -> Self {
         Self { store }
@@ -24,7 +25,7 @@ where
 
 impl<S> Gateway for P4Gateway<S> 
 where 
-    S: ObjectProxy + BranchProxy + Send + Sync + 'static
+    S: StorageBackend + 'static
 {
     fn name(&self) -> &'static str {
         "p4"

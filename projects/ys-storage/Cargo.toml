@@ -10,8 +10,8 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 dashmap = { workspace = true }
 tracing = { workspace = true }
+limbo = { version = "0.0.22", optional = true }
 
 [features]
-default = ["mem", "fs"]
-fs = []
-mem = []
+default = []
+limbo = ["dep:limbo"]

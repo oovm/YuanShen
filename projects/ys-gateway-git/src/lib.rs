@@ -1,7 +1,8 @@
 use tokio::net::TcpStream;
 use tokio_util::codec::Framed;
 use futures::{StreamExt, SinkExt};
-use ys_types::{YsError, traits::{ObjectProxy, BranchProxy}};
+use ys_types::YsError;
+use ys_storage::StorageBackend;
 use ys_gateway::Gateway;
 use ys_protocol::git::{PktLine, PktLineCodec};
 use bytes::Bytes;
@@ -12,7 +13,7 @@ pub struct GitGateway<S> {
 
 impl<S> GitGateway<S> 
 where 
-    S: ObjectProxy + BranchProxy + Send + Sync + 'static
+    S: StorageBackend + 'static
 {
     pub fn new(store: S) -> Self {
         Self { store }
@@ -45,7 +46,7 @@ where
 
 impl<S> Gateway for GitGateway<S> 
 where 
-    S: ObjectProxy + BranchProxy + Send + Sync + 'static
+    S: StorageBackend + 'static
 {
     fn name(&self) -> &'static str {
         "git"

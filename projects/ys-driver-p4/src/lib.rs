@@ -1,5 +1,6 @@
 use std::path::Path;
-use ys_types::{ObjectID, YsError, traits::{ObjectProxy, BranchProxy}};
+use ys_types::{ObjectID, YsError};
+use ys_storage::StorageBackend;
 use ys_driver::Driver;
 
 pub struct P4Driver<S> {
@@ -8,7 +9,7 @@ pub struct P4Driver<S> {
 
 impl<S> P4Driver<S> 
 where 
-    S: ObjectProxy + BranchProxy + Send + Sync + 'static
+    S: StorageBackend + 'static
 {
     pub fn new(store: S) -> Self {
         Self { store }
@@ -17,7 +18,7 @@ where
 
 impl<S> Driver for P4Driver<S> 
 where 
-    S: ObjectProxy + BranchProxy + Send + Sync + 'static
+    S: StorageBackend + 'static
 {
     fn name(&self) -> &'static str {
         "p4"

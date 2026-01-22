@@ -1,6 +1,6 @@
 use ys_types::{
     objects::{ObjectID, TextFile},
-    ObjectProxy,
+    ObjectProxy, BranchProxy,
     YsError, YuanShenObject,
 };
 use std::path::{Path, PathBuf};
@@ -11,6 +11,8 @@ use tokio::fs::File;
 pub struct LocalDotYuanShen {
     root: PathBuf,
 }
+
+impl crate::StorageBackend for LocalDotYuanShen {}
 
 impl LocalDotYuanShen {
     pub fn new(root: PathBuf) -> Result<Self, std::io::Error> {
@@ -100,5 +102,60 @@ impl ObjectProxy for LocalDotYuanShen {
             tokio::fs::write(path, bytes).await.map_err(|e| YsError::external_error(e))?;
         }
         Ok(id)
+    }
+}
+
+impl BranchProxy for LocalDotYuanShen {
+    async fn get_branch_name(&self) -> Result<String, YsError> {
+        let branch_file = self.root.join("branch");
+        if branch_file.exists() {
+            tokio::fs::read_to_string(branch_file)
+                .await
+                .map(|s| s.trim().to_string())
+                .map_err(|e| YsError::external_error(e))
+        } else {
+            Ok("main".to_string())
+        }
+    }
+
+    async fn set_branch_name(&self, name: &str) -> Result<(), YsError> {
+        let branch_file = self.root.join("branch");
+        tokio::fs::write(branch_file, name)
+            .await
+            .map_err(|e| YsError::external_error(e))
+    }
+
+    async fn get_branch_id(&self, name: &str) -> Result<ObjectID, YsError> {
+        let path = self.root.join("branches").join(name);
+        let content = tokio::fs::read_to_string(path).await.map_err(|e| YsError::external_error(e))?;
+        Ok(serde_json::from_str(&content)?)
+    }
+
+    async fn set_branch_id(&self, name: &str, id: ObjectID) -> Result<(), YsError> {
+        let path = self.root.join("branches").join(name);
+        if let Some(parent) = path.parent() {
+            tokio::fs::create_dir_all(parent).await.map_err(|e| YsError::external_error(e))?;
+        }
+        let content = serde_json::to_string_pretty(&id)?;
+        tokio::fs::write(path, content).await.map_err(|e| YsError::external_error(e))
+    }
+
+    async fn branch_exists(&self, name: &str) -> Result<bool, YsError> {
+        Ok(self.root.join("branches").join(name).exists())
+    }
+
+    async fn list_branches(&self) -> Result<Vec<(String, ObjectID)>, YsError> {
+        let branches_dir = self.root.join("branches");
+        if !branches_dir.exists() {
+            return Ok(vec![]);
+        }
+        let mut branches = vec![];
+        let mut entries = tokio::fs::read_dir(branches_dir).await.map_err(|e| YsError::external_error(e))?;
+        while let Some(entry) = entries.next_entry().await.map_err(|e| YsError::external_error(e))? {
+            let name = entry.file_name().to_string_lossy().to_string();
+            let id = self.get_branch_id(&name).await?;
+            branches.push((name, id));
+        }
+        Ok(branches)
     }
 }

@@ -1,21 +1,31 @@
 use ys_types::{
     objects::{ObjectID, TextFile},
-    ObjectProxy,
+    ObjectProxy, BranchProxy,
     YsError, YsErrorKind, YuanShenObject,
 };
 use std::path::Path;
 use tokio::fs::File;
 use dashmap::DashMap;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 /// [ObjectProxy] in memory, all changes will disappear after the program exits, used for testing.
 #[derive(Clone, Debug)]
 pub struct MemoryObjectPool {
     objects: DashMap<ObjectID, Vec<u8>>,
+    branches: DashMap<String, ObjectID>,
+    current_branch: Arc<RwLock<String>>,
 }
+
+impl crate::StorageBackend for MemoryObjectPool {}
 
 impl Default for MemoryObjectPool {
     fn default() -> Self {
-        Self { objects: Default::default() }
+        Self { 
+            objects: Default::default(),
+            branches: Default::default(),
+            current_branch: Arc::new(RwLock::new("main".to_string())),
+        }
     }
 }
 
@@ -78,5 +88,37 @@ impl ObjectProxy for MemoryObjectPool {
         let bytes = serde_json::to_vec_pretty(obj)?;
         self.objects.insert(id, bytes);
         Ok(id)
+    }
+}
+
+impl BranchProxy for MemoryObjectPool {
+    async fn get_branch_name(&self) -> Result<String, YsError> {
+        Ok(self.current_branch.read().await.clone())
+    }
+
+    async fn set_branch_name(&self, name: &str) -> Result<(), YsError> {
+        let mut branch = self.current_branch.write().await;
+        *branch = name.to_string();
+        Ok(())
+    }
+
+    async fn get_branch_id(&self, name: &str) -> Result<ObjectID, YsError> {
+        match self.branches.get(name) {
+            Some(id) => Ok(*id),
+            None => Err(YsErrorKind::GenericError { message: format!("Branch not found: {}", name) })?,
+        }
+    }
+
+    async fn set_branch_id(&self, name: &str, id: ObjectID) -> Result<(), YsError> {
+        self.branches.insert(name.to_string(), id);
+        Ok(())
+    }
+
+    async fn branch_exists(&self, name: &str) -> Result<bool, YsError> {
+        Ok(self.branches.contains_key(name))
+    }
+
+    async fn list_branches(&self) -> Result<Vec<(String, ObjectID)>, YsError> {
+        Ok(self.branches.iter().map(|r| (r.key().clone(), *r.value())).collect())
     }
 }
