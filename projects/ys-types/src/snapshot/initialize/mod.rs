@@ -7,7 +7,7 @@ use std::io::Write;
 #[derive(Debug)]
 pub struct DotYuanShenClient {
     dot_root: PathBuf,
-    dot_config: PathBuf,
+    _dot_config: PathBuf,
 }
 
 #[derive(Debug)]
@@ -23,7 +23,7 @@ impl InitializeConfig {
         let root = self.current.join(DOT_YUAN_SHEN);
         let config = self.current.join(".config").join("yuan-shen");
         if read_dir(&root).is_ok() {
-            return Ok(DotYuanShenClient { dot_root: root, dot_config: config });
+            return Ok(DotYuanShenClient { dot_root: root, _dot_config: config });
         }
         create_dir_all(&root)?;
         self.generate_branches()?;
@@ -40,7 +40,7 @@ impl InitializeConfig {
         // let snapshot_id = store.put_typed(&snapshot).await?;
         // write_json(&snapshot_id, &root.join("branches").join(self.initial_branch.as_ref()))?;
         // todo!();
-        Ok(DotYuanShenClient { dot_root: root, dot_config: config })
+        Ok(DotYuanShenClient { dot_root: root, _dot_config: config })
     }
     fn generate_branches(&self) -> std::io::Result<()> {
         // Specify the current branch
@@ -80,7 +80,7 @@ impl DotYuanShenClient {
         //         path,
         //     ))?
         // }
-        Ok(Self { dot_root, dot_config })
+        Ok(Self { dot_root, _dot_config: dot_config })
     }
 }
 
@@ -113,11 +113,11 @@ impl YuanShenClient for DotYuanShenClient {
     fn get_branch_name(&self) -> Result<String, YsError> {
         Ok(read_to_string(&self.dot_root.join("branch"))?)
     }
-    fn set_branch(&self, new: &str) -> Result<(), YsError> {
+    fn set_branch(&self, _new: &str) -> Result<(), YsError> {
         todo!()
     }
 
-    fn create_branch(&self, name: &str) -> Result<ObjectID, YsError> {
+    fn create_branch(&self, _name: &str) -> Result<ObjectID, YsError> {
         todo!()
     }
 }

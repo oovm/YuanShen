@@ -17,6 +17,7 @@ pub mod differences;
 pub mod directory;
 pub mod initialize;
 
+#[allow(dead_code)]
 #[derive(Copy, Debug, Clone)]
 pub enum SnapShotKind {
     Initialization = 0,

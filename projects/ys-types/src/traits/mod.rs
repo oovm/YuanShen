@@ -17,6 +17,7 @@ pub trait YuanShenObject {
 }
 
 /// An object proxy that specifies various capabilities
+#[allow(async_fn_in_trait)]
 pub trait ObjectProxy: Send + Sync {
     async fn has(&self, id: ObjectID) -> Result<bool, YsError>;
     async fn get_string(&self, text: TextFile) -> Result<String, YsError>;
@@ -41,6 +42,7 @@ pub trait ObjectProxy: Send + Sync {
 pub trait ObjectStore: ObjectProxy {}
 impl<T: ObjectProxy> ObjectStore for T {}
 
+#[allow(async_fn_in_trait)]
 pub trait BranchProxy: Send + Sync {
     /// Get the name of the current branch
     async fn get_branch_name(&self) -> Result<String, YsError>;

@@ -11,6 +11,7 @@ use std::{
 
 mod hasher;
 
+#[allow(dead_code)]
 pub trait WriteHashID {
     fn write_hash_id(&self, f: &mut Formatter<'_>) -> std::fmt::Result;
 }
@@ -31,6 +32,7 @@ where
     Ok(serde_json::from_reader(File::options().read(true).open(path)?)?)
 }
 
+#[allow(dead_code)]
 pub fn from_json<A>(bytes: &[u8]) -> Result<A, YsError>
 where
     A: for<'de> Deserialize<'de>,
@@ -69,6 +71,7 @@ where
     Ok(ObjectID(Uuid::new_v5(&namespace, &buffer)))
 }
 
+#[allow(dead_code)]
 pub async fn truncate_write(path: PathBuf, bytes: &[u8]) -> Result<(), YsError> {
     let open = File::options().write(true).truncate(true).open(&path);
     match open.and_then(|mut o| o.write(bytes)) {
@@ -79,6 +82,7 @@ pub async fn truncate_write(path: PathBuf, bytes: &[u8]) -> Result<(), YsError> 
     }
 }
 
+#[allow(dead_code)]
 pub async fn read_to_string(path: PathBuf) -> Result<String, YsError> {
     let mut buffer = String::new();
     let open = File::options().open(&path);
@@ -91,6 +95,7 @@ pub async fn read_to_string(path: PathBuf) -> Result<String, YsError> {
 
 }
 
+#[allow(dead_code)]
 pub async fn copy(source: &Path, target: PathBuf) -> Result<(), YsError> {
     match tokio::fs::copy(&source, &target).await {
         Ok(_) => Ok(()),

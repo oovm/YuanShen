@@ -28,7 +28,7 @@ impl YuanShenCommit {
         let snap = Commit {
             tree: directory_id,
             parents: vec![old_tip].into_iter().collect(),
-            extra: SnapShotData { kind: 0, message: self.message, authors: Default::default() },
+            extra: SnapShotData { kind: 0, message: self.message, tenants: Default::default() },
         };
         let snap_id = store.put_typed(&snap).await?;
         dot_rev.set_branch_snapshot_id(&branch, snap_id)
