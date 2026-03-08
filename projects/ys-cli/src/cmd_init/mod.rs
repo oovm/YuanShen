@@ -2,14 +2,20 @@ use clap::Args;
 use std::{borrow::Cow, env::current_dir};
 use ys_types::{initialize::InitializeConfig, IgnoreRules, YsError};
 
+/// 初始化命令参数
+///
+/// 用于初始化一个新的 YuanShen 仓库
 #[derive(Debug, Args)]
 pub struct YuanShenInitialize {
-    /// override the name of the initial branch
+    /// 覆盖初始分支的名称
     #[clap(long, short = 'b')]
     initial_branch: Option<String>,
 }
 
 impl YuanShenInitialize {
+    /// 执行初始化操作
+    ///
+    /// 在当前目录创建一个新的 YuanShen 仓库，包括初始化配置和创建初始分支
     pub async fn initialize(self) -> Result<(), YsError> {
         let config = InitializeConfig {
             current: current_dir()?,

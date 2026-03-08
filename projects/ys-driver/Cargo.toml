@@ -16,6 +16,7 @@ ys-types = { workspace = true }
 ys-storage = { workspace = true }
 git2 = { workspace = true }
 tempfile = { workspace = true }
+blake3 = { workspace = true }
 
 [dev-dependencies]
 tokio-test = { workspace = true }

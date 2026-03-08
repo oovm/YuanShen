@@ -49,7 +49,7 @@ pub enum DirectoryEntry {
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct DirectoryObject {
-    entries: BTreeMap<String, DirectoryEntry>,
+    pub entries: BTreeMap<String, DirectoryEntry>,
 }
 
 impl Serialize for DirectoryObject {

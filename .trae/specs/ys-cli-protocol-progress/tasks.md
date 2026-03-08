@@ -14,7 +14,7 @@
   - `human-judgement` TR-1.3: 所有公共 API 都有完整的文档注释
 - **Notes**: 现有 Branch 命令只显示当前分支名称
 
-## [ ] Task 2: 实现 ys-cli 的 Squash 命令
+## [x] Task 2: 实现 ys-cli 的 Squash 命令
 - **Priority**: P0
 - **Depends On**: None
 - **Description**: 
@@ -29,7 +29,7 @@
   - `human-judgement` TR-2.4: 所有公共 API 都有完整的文档注释
 - **Notes**: 从当前分支的最新提交向前合并指定数量的提交
 
-## [ ] Task 3: 实现 ys-cli 的 Merge 命令
+## [x] Task 3: 实现 ys-cli 的 Merge 命令
 - **Priority**: P0
 - **Depends On**: None
 - **Description**: 
@@ -44,7 +44,7 @@
   - `human-judgement` TR-3.3: 所有公共 API 都有完整的文档注释
 - **Notes**: 使用 fast-forward 策略当可能时
 
-## [ ] Task 4: 实现 ys-cli 的 Reset 命令
+## [x] Task 4: 实现 ys-cli 的 Reset 命令
 - **Priority**: P0
 - **Depends On**: None
 - **Description**: 
@@ -58,7 +58,7 @@
   - `human-judgement` TR-4.3: 所有公共 API 都有完整的文档注释
 - **Notes**: 支持通过提交哈希或分支名指定目标
 
-## [ ] Task 5: 完善 ys-protocol 的 Git 协议支持
+## [x] Task 5: 完善 ys-protocol 的 Git 协议支持
 - **Priority**: P1
 - **Depends On**: None
 - **Description**: 
@@ -72,7 +72,7 @@
   - `human-judgement` TR-5.3: 所有公共 API 都有完整的文档注释
 - **Notes**: 参考 Git 协议文档
 
-## [ ] Task 6: 为现有 ys-cli 命令添加文档注释
+## [x] Task 6: 为现有 ys-cli 命令添加文档注释
 - **Priority**: P1
 - **Depends On**: None
 - **Description**: 

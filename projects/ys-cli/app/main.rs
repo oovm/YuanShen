@@ -56,10 +56,10 @@ pub async fn main() -> Result<(), YsError> {
             serde_json::to_writer_pretty(stdout(), &old_directory.difference(&directory)).unwrap();
         }
         Commit(sub) => sub.commit().await.unwrap(),
-        Squash(_) => {}
-        Merge(_) => {}
+        Squash(sub) => sub.squash().await.unwrap(),
+        Merge(sub) => sub.merge().await.unwrap(),
         Rebase(_) => {}
-        Reset(_) => {}
+        Reset(sub) => sub.reset().await?,
         Orphan(_) => {}
         Stash(_) => {}
         External(_) => {}

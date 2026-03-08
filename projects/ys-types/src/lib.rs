@@ -17,7 +17,7 @@ pub use crate::{
     errors::{Result, YsError, YsErrorKind},
     snapshot::{
         differences,
-        directory::{DirectoryEntry, SnapShotTree},
+        directory::{DirectoryEntry, DirectoryObject, SnapShotTree},
         initialize,
     },
     objects::{ObjectID, IgnoreRules, commit_id::{Commit, SnapShotData}},

@@ -24,7 +24,7 @@
   - `human-judgement` TR-2.1: 选择的库能够满足 clone, fetch, push 的基本需求
 - **Notes**: 需要考虑库的异步支持（因为 Driver trait 的方法是 async 的）
 
-## [/] Task 3: 实现 GitDriver::clone 方法
+## [x] Task 3: 实现 GitDriver::clone 方法
 - **Priority**: P0
 - **Depends On**: [Task 1, Task 2]
 - **Description**: 
@@ -37,7 +37,7 @@
   - `human-judgement` TR-3.2: 所有公共 API 都有完整的中文文档注释
 - **Notes**: 可以先实现基础版本，使用临时目录克隆然后导入到存储后端
 
-## [ ] Task 4: 实现 GitDriver::fetch 方法
+## [x] Task 4: 实现 GitDriver::fetch 方法
 - **Priority**: P0
 - **Depends On**: [Task 3]
 - **Description**: 
@@ -48,7 +48,7 @@
   - `programmatic` TR-4.1: 代码能够通过编译检查
   - `human-judgement` TR-4.2: 所有公共 API 都有完整的中文文档注释
 
-## [ ] Task 5: 实现 GitDriver::push 方法
+## [x] Task 5: 实现 GitDriver::push 方法
 - **Priority**: P1
 - **Depends On**: [Task 4]
 - **Description**: 
@@ -59,7 +59,7 @@
   - `programmatic` TR-5.1: 代码能够通过编译检查
   - `human-judgement` TR-5.2: 所有公共 API 都有完整的中文文档注释
 
-## [ ] Task 6: 研究并选择合适的 SVN 库
+## [x] Task 6: 研究并选择合适的 SVN 库
 - **Priority**: P1
 - **Depends On**: None
 - **Description**: 
@@ -70,7 +70,7 @@
 - **Test Requirements**:
   - `human-judgement` TR-6.1: 选择的库能够满足 clone, fetch, push 的基本需求
 
-## [ ] Task 7: 实现 SvnDriver 的核心功能
+## [x] Task 7: 实现 SvnDriver 的核心功能
 - **Priority**: P1
 - **Depends On**: [Task 1, Task 6]
 - **Description**: 
@@ -81,7 +81,7 @@
   - `programmatic` TR-7.1: 代码能够通过编译检查
   - `human-judgement` TR-7.2: 所有公共 API 都有完整的中文文档注释
 
-## [ ] Task 8: 研究并选择合适的 P4 库
+## [x] Task 8: 研究并选择合适的 P4 库
 - **Priority**: P2
 - **Depends On**: None
 - **Description**: 
@@ -92,7 +92,7 @@
 - **Test Requirements**:
   - `human-judgement` TR-8.1: 选择的库能够满足 clone, fetch, push 的基本需求
 
-## [ ] Task 9: 实现 P4Driver 的核心功能
+## [/] Task 9: 实现 P4Driver 的核心功能
 - **Priority**: P2
 - **Depends On**: [Task 1, Task 8]
 - **Description**: 

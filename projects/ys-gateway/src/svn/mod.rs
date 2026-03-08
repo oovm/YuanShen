@@ -1,14 +1,16 @@
-use tokio::net::TcpStream;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use ys_types::YsError;
-use ys_storage::StorageBackend;
 use crate::Gateway;
-use std::future::Future;
-use std::pin::Pin;
+use std::{future::Future, pin::Pin};
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::TcpStream,
+};
+use ys_storage::StorageBackend;
+use ys_types::YsError;
 
 /// Subversion (SVN) 网关实现，用于处理 SVN 协议的连接和请求
 pub struct SvnGateway<S> {
-    store: S,
+    /// 存储后端，用于访问存储的对象
+    _store: S,
 }
 
 /// SVN 协议项，用于表示 SVN 协议中的各种数据类型
@@ -22,22 +24,19 @@ pub enum SvnItem {
     List(Vec<SvnItem>),
 }
 
-impl<S> SvnGateway<S> 
-where 
-    S: StorageBackend + 'static
+impl<S> SvnGateway<S>
+where
+    S: StorageBackend + 'static,
 {
     /// 创建一个新的 SvnGateway 实例
     pub fn new(store: S) -> Self {
-        Self { store }
+        Self { _store: store }
     }
 
     /// 从异步读取器中读取一个 SVN 协议项
     async fn read_item<R: AsyncReadExt + Unpin + Send>(reader: &mut R) -> Result<SvnItem, YsError> {
         let mut b = [0u8; 1];
-        reader
-            .read_exact(&mut b)
-            .await
-            .map_err(|e| YsError::external_error(e))?;
+        reader.read_exact(&mut b).await.map_err(YsError::external_error)?;
 
         Self::read_item_with_first_byte(reader, b[0]).await
     }
@@ -53,31 +52,22 @@ where
                     let mut num = (first - b'0') as i64;
                     let mut b = [0u8; 1];
                     loop {
-                        reader
-                            .read_exact(&mut b)
-                            .await
-                            .map_err(|e| YsError::external_error(e))?;
+                        reader.read_exact(&mut b).await.map_err(YsError::external_error)?;
                         if b[0] == b':' {
                             let len = num as usize;
                             let mut buf = vec![0u8; len];
-                            reader
-                                .read_exact(&mut buf)
-                                .await
-                                .map_err(|e| YsError::external_error(e))?;
-                            reader
-                                .read_exact(&mut b)
-                                .await
-                                .map_err(|e| YsError::external_error(e))?;
+                            reader.read_exact(&mut buf).await.map_err(YsError::external_error)?;
+                            reader.read_exact(&mut b).await.map_err(YsError::external_error)?;
                             return Ok(SvnItem::String(buf));
-                        } else if b[0] == b' ' {
+                        }
+                        else if b[0] == b' ' {
                             return Ok(SvnItem::Number(num));
-                        } else if b[0] >= b'0' && b[0] <= b'9' {
+                        }
+                        else if b[0] >= b'0' && b[0] <= b'9' {
                             num = num * 10 + (b[0] - b'0') as i64;
-                        } else {
-                            return Err(YsError::invalid_object(format!(
-                                "Unexpected character in SVN item: {}",
-                                b[0] as char
-                            )));
+                        }
+                        else {
+                            return Err(YsError::invalid_object(format!("Unexpected character in SVN item: {}", b[0] as char)));
                         }
                     }
                 }
@@ -85,28 +75,21 @@ where
                     let mut list = Vec::new();
                     loop {
                         let mut b = [0u8; 1];
-                        reader
-                            .read_exact(&mut b)
-                            .await
-                            .map_err(|e| YsError::external_error(e))?;
+                        reader.read_exact(&mut b).await.map_err(YsError::external_error)?;
                         if b[0] == b')' {
                             let mut space = [0u8; 1];
-                            reader
-                                .read_exact(&mut space)
-                                .await
-                                .map_err(|e| YsError::external_error(e))?;
+                            reader.read_exact(&mut space).await.map_err(YsError::external_error)?;
                             return Ok(SvnItem::List(list));
-                        } else if b[0] == b' ' {
+                        }
+                        else if b[0] == b' ' {
                             continue;
-                        } else {
+                        }
+                        else {
                             list.push(Self::read_item_with_first_byte(reader, b[0]).await?);
                         }
                     }
                 }
-                _ => Err(YsError::invalid_object(format!(
-                    "Unexpected start of SVN item: {}",
-                    first as char
-                ))),
+                _ => Err(YsError::invalid_object(format!("Unexpected start of SVN item: {}", first as char))),
             }
         })
     }
@@ -119,37 +102,19 @@ where
         Box::pin(async move {
             match item {
                 SvnItem::Number(n) => {
-                    writer
-                        .write_all(format!("{} ", n).as_bytes())
-                        .await
-                        .map_err(|e| YsError::external_error(e))?;
+                    writer.write_all(format!("{} ", n).as_bytes()).await.map_err(YsError::external_error)?;
                 }
                 SvnItem::String(s) => {
-                    writer
-                        .write_all(format!("{}:", s.len()).as_bytes())
-                        .await
-                        .map_err(|e| YsError::external_error(e))?;
-                    writer
-                        .write_all(s)
-                        .await
-                        .map_err(|e| YsError::external_error(e))?;
-                    writer
-                        .write_all(b" ")
-                        .await
-                        .map_err(|e| YsError::external_error(e))?;
+                    writer.write_all(format!("{}:", s.len()).as_bytes()).await.map_err(YsError::external_error)?;
+                    writer.write_all(s).await.map_err(YsError::external_error)?;
+                    writer.write_all(b" ").await.map_err(YsError::external_error)?;
                 }
                 SvnItem::List(l) => {
-                    writer
-                        .write_all(b"( ")
-                        .await
-                        .map_err(|e| YsError::external_error(e))?;
+                    writer.write_all(b"( ").await.map_err(YsError::external_error)?;
                     for i in l {
                         Self::write_item(writer, i).await?;
                     }
-                    writer
-                        .write_all(b") ")
-                        .await
-                        .map_err(|e| YsError::external_error(e))?;
+                    writer.write_all(b") ").await.map_err(YsError::external_error)?;
                 }
             }
             Ok(())
@@ -168,10 +133,10 @@ where
             ]),
         ]);
         Self::write_item(stream, &greeting).await?;
-        stream.flush().await.map_err(|e| YsError::external_error(e))?;
-        
+        stream.flush().await.map_err(YsError::external_error)?;
+
         let _response = Self::read_item(stream).await?;
-        
+
         let auth_greeting = SvnItem::List(vec![
             SvnItem::String(b"success".to_vec()),
             SvnItem::List(vec![
@@ -180,7 +145,7 @@ where
             ]),
         ]);
         Self::write_item(stream, &auth_greeting).await?;
-        stream.flush().await.map_err(|e| YsError::external_error(e))?;
+        stream.flush().await.map_err(YsError::external_error)?;
 
         Ok(())
     }
@@ -214,46 +179,38 @@ where
                     "get-file" => self.handle_get_file(stream, &items[1..]).await,
                     _ => self.handle_unknown_command(stream, &cmd).await,
                 }
-            } else {
+            }
+            else {
                 self.handle_unknown_command(stream, "invalid-command").await
             }
-        } else {
+        }
+        else {
             self.handle_unknown_command(stream, "invalid-command").await
         }
     }
 
     /// 处理 get-latest-rev 命令，获取最新的修订版本号
     async fn handle_get_latest_rev(&self, stream: &mut TcpStream, _args: &[SvnItem]) -> Result<(), YsError> {
-        let response = SvnItem::List(vec![
-            SvnItem::String(b"success".to_vec()),
-            SvnItem::Number(1),
-        ]);
+        let response = SvnItem::List(vec![SvnItem::String(b"success".to_vec()), SvnItem::Number(1)]);
         Self::write_item(stream, &response).await?;
-        stream.flush().await.map_err(|e| YsError::external_error(e))?;
+        stream.flush().await.map_err(YsError::external_error)?;
         Ok(())
     }
 
     /// 处理 get-dir 命令，获取目录内容
     async fn handle_get_dir(&self, stream: &mut TcpStream, _args: &[SvnItem]) -> Result<(), YsError> {
-        let response = SvnItem::List(vec![
-            SvnItem::String(b"success".to_vec()),
-            SvnItem::List(vec![]),
-            SvnItem::Number(1),
-        ]);
+        let response = SvnItem::List(vec![SvnItem::String(b"success".to_vec()), SvnItem::List(vec![]), SvnItem::Number(1)]);
         Self::write_item(stream, &response).await?;
-        stream.flush().await.map_err(|e| YsError::external_error(e))?;
+        stream.flush().await.map_err(YsError::external_error)?;
         Ok(())
     }
 
     /// 处理 get-file 命令，获取文件内容
     async fn handle_get_file(&self, stream: &mut TcpStream, _args: &[SvnItem]) -> Result<(), YsError> {
-        let response = SvnItem::List(vec![
-            SvnItem::String(b"success".to_vec()),
-            SvnItem::String(b"".to_vec()),
-            SvnItem::Number(1),
-        ]);
+        let response =
+            SvnItem::List(vec![SvnItem::String(b"success".to_vec()), SvnItem::String(b"".to_vec()), SvnItem::Number(1)]);
         Self::write_item(stream, &response).await?;
-        stream.flush().await.map_err(|e| YsError::external_error(e))?;
+        stream.flush().await.map_err(YsError::external_error)?;
         Ok(())
     }
 
@@ -267,14 +224,14 @@ where
             ]),
         ]);
         Self::write_item(stream, &response).await?;
-        stream.flush().await.map_err(|e| YsError::external_error(e))?;
+        stream.flush().await.map_err(YsError::external_error)?;
         Ok(())
     }
 }
 
-impl<S> Gateway for SvnGateway<S> 
-where 
-    S: StorageBackend + 'static
+impl<S> Gateway for SvnGateway<S>
+where
+    S: StorageBackend + 'static,
 {
     /// 获取网关名称
     fn name(&self) -> &'static str {
@@ -286,14 +243,14 @@ where
         if let Ok(addr) = stream.peer_addr() {
             println!("Handling SVN connection from {:?}", addr);
         }
-        
+
         if let Err(e) = self.handle_handshake(&mut stream).await {
             eprintln!("SVN handshake error: {:?}", e);
             return Err(e);
         }
-        
+
         println!("SVN handshake successful");
-        
+
         self.command_loop(&mut stream).await
     }
 }

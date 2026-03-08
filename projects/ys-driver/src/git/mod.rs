@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
-use std::fs::read_dir;
-use std::path::{Path, PathBuf};
-use ys_types::{ObjectID, YsError};
+use std::fs::{read_dir, create_dir_all, write};
+use std::path::Path;
+use ys_types::{DirectoryEntry, ObjectID, YsError, Commit, SnapShotTree};
 use ys_storage::StorageBackend;
 use crate::Driver;
 
@@ -33,10 +33,10 @@ where
     ///
     /// # 返回值
     /// 操作成功返回 Ok(())，失败返回 YsError
-    async fn import_directory(
+    fn import_directory_sync(
         &self,
         dir_path: &Path,
-        entries: &mut BTreeMap<String, ys_types::snapshot::directory::DirectoryEntry>,
+        entries: &mut BTreeMap<String, DirectoryEntry>,
     ) -> Result<(), YsError> {
         let dir = read_dir(dir_path)?;
         for entry in dir {
@@ -52,23 +52,64 @@ where
 
             if path.is_dir() {
                 let mut child_entries = BTreeMap::new();
-                self.import_directory(&path, &mut child_entries).await?;
-                let dir_obj = ys_types::snapshot::directory::DirectoryObject {
+                self.import_directory_sync(&path, &mut child_entries)?;
+                let dir_obj = ys_types::DirectoryObject {
                     entries: child_entries,
                 };
                 entries.insert(
                     file_name,
-                    ys_types::snapshot::directory::DirectoryEntry::Directory(dir_obj),
+                    DirectoryEntry::Directory(dir_obj),
                 );
             } else if path.is_file() {
-                let text_file = self.store.put_string_file(&path).await?;
+                let rt = tokio::runtime::Runtime::new()?;
+                let text_file = rt.block_on(self.store.put_string_file(&path))?;
                 entries.insert(
                     file_name,
-                    ys_types::snapshot::directory::DirectoryEntry::TextStandalone(text_file),
+                    DirectoryEntry::TextStandalone(text_file),
                 );
             }
         }
         Ok(())
+    }
+
+    /// 递归将目录条目导出到文件系统
+    ///
+    /// # 参数
+    /// * `entries` - 目录条目集合
+    /// * `path` - 目标路径
+    ///
+    /// # 返回值
+    /// 操作成功返回 Ok(())，失败返回 YsError
+    fn export_directory<'a>(
+        &'a self,
+        entries: &'a BTreeMap<String, DirectoryEntry>,
+        path: &'a Path,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), YsError>> + 'a>> {
+        Box::pin(async move {
+            create_dir_all(path)?;
+
+            for (name, entry) in entries {
+                let entry_path = path.join(name);
+
+                match entry {
+                    DirectoryEntry::Directory(dir_obj) => {
+                        self.export_directory(&dir_obj.entries, &entry_path).await?;
+                    }
+                    DirectoryEntry::TextStandalone(text_file) => {
+                        let content = self.store.get_string(text_file.clone()).await?;
+                        write(&entry_path, content)?;
+                    }
+                    DirectoryEntry::TextIncremental(_) => {
+                        return Err(YsError::not_implemented("TextIncremental 导出尚未实现"));
+                    }
+                    DirectoryEntry::Subtree(_) => {
+                        return Err(YsError::not_implemented("Subtree 导出尚未实现"));
+                    }
+                }
+            }
+
+            Ok(())
+        })
     }
 }
 
@@ -99,7 +140,7 @@ where
         git2::Repository::clone(url, temp_path).map_err(YsError::external_error)?;
 
         let mut root_entries = BTreeMap::new();
-        self.import_directory(temp_path, &mut root_entries).await?;
+        self.import_directory_sync(temp_path, &mut root_entries)?;
 
         Ok(())
     }
@@ -112,8 +153,19 @@ where
     /// # 返回值
     /// 操作成功返回最新提交的 ObjectID，失败返回 YsError
     async fn fetch(&self, url: &str) -> Result<ObjectID, YsError> {
-        println!("Fetching Git repository from {}", url);
-        Err(YsError::not_implemented("GitDriver::fetch_to_db"))
+        let temp_dir = tempfile::tempdir()?;
+        let temp_path = temp_dir.path();
+
+        let repo = git2::Repository::clone(url, temp_path).map_err(YsError::external_error)?;
+
+        let head = repo.head().map_err(YsError::external_error)?;
+        let commit = head.peel_to_commit().map_err(YsError::external_error)?;
+        let git_oid = commit.id();
+        let git_oid_bytes = git_oid.as_bytes();
+
+        let object_id = ObjectID::from(git_oid_bytes);
+
+        Ok(object_id)
     }
 
     /// 将本地提交推送到远程仓库
@@ -125,7 +177,51 @@ where
     /// # 返回值
     /// 操作成功返回 Ok(())，失败返回 YsError
     async fn push(&self, url: &str, commit_id: ObjectID) -> Result<(), YsError> {
-        println!("Pushing Git commit {} to {}", commit_id, url);
-        Err(YsError::not_implemented("GitDriver::push_from_db"))
+        let temp_dir = tempfile::tempdir()?;
+        let temp_path = temp_dir.path();
+
+        let repo = git2::Repository::clone(url, temp_path).map_err(YsError::external_error)?;
+
+        let commit: Commit = self.store.get_typed(commit_id).await?;
+
+        let tree: SnapShotTree = self.store.get_typed(commit.tree).await?;
+
+        self.export_directory(&tree.root, temp_path).await?;
+
+        let mut index = repo.index().map_err(YsError::external_error)?;
+        index.add_all(["*"].iter(), git2::IndexAddOption::DEFAULT, None)
+            .map_err(YsError::external_error)?;
+        index.write().map_err(YsError::external_error)?;
+
+        let tree_oid = index.write_tree().map_err(YsError::external_error)?;
+        let tree = repo.find_tree(tree_oid).map_err(YsError::external_error)?;
+
+        let head = repo.head().map_err(YsError::external_error)?;
+        let parent_commit = head.peel_to_commit().map_err(YsError::external_error)?;
+
+        let signature = git2::Signature::now("GitDriver", "gitdriver@example.com")
+            .map_err(YsError::external_error)?;
+
+        let message = &commit.extra.message;
+
+        repo.commit(
+            Some("HEAD"),
+            &signature,
+            &signature,
+            message,
+            &tree,
+            &[&parent_commit],
+        )
+        .map_err(YsError::external_error)?;
+
+        let mut remote = repo.find_remote("origin").map_err(YsError::external_error)?;
+        let mut push_options = git2::PushOptions::new();
+        remote.push(
+            &["refs/heads/main:refs/heads/main"],
+            Some(&mut push_options),
+        )
+        .map_err(YsError::external_error)?;
+
+        Ok(())
     }
 }

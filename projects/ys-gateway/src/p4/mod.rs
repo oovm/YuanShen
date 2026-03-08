@@ -1,10 +1,11 @@
-use tokio::net::TcpStream;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use ys_types::YsError;
-use ys_storage::StorageBackend;
 use crate::Gateway;
-use std::future::Future;
-use std::pin::Pin;
+use std::{future::Future, pin::Pin};
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::TcpStream,
+};
+use ys_storage::StorageBackend;
+use ys_types::YsError;
 
 /// Perforce (P4) 协议项，用于表示 P4 协议中的各种数据类型
 #[derive(Debug, PartialEq, Eq)]
@@ -22,25 +23,22 @@ pub enum P4Item {
 /// Perforce (P4) 网关实现，用于处理 P4 协议的连接和请求
 pub struct P4Gateway<S> {
     /// 存储后端，用于访问存储的对象
-    store: S,
+    _store: S,
 }
 
-impl<S> P4Gateway<S> 
-where 
-    S: StorageBackend + 'static
+impl<S> P4Gateway<S>
+where
+    S: StorageBackend + 'static,
 {
     /// 创建一个新的 P4Gateway 实例
     pub fn new(store: S) -> Self {
-        Self { store }
+        Self { _store: store }
     }
 
     /// 从异步读取器中读取一个 P4 协议项
     async fn read_item<R: AsyncReadExt + Unpin + Send>(reader: &mut R) -> Result<P4Item, YsError> {
         let mut b = [0u8; 1];
-        reader
-            .read_exact(&mut b)
-            .await
-            .map_err(|e| YsError::external_error(e))?;
+        reader.read_exact(&mut b).await.map_err(YsError::external_error)?;
 
         Self::read_item_with_first_byte(reader, b[0]).await
     }
@@ -56,31 +54,22 @@ where
                     let mut num = (first - b'0') as i64;
                     let mut b = [0u8; 1];
                     loop {
-                        reader
-                            .read_exact(&mut b)
-                            .await
-                            .map_err(|e| YsError::external_error(e))?;
+                        reader.read_exact(&mut b).await.map_err(YsError::external_error)?;
                         if b[0] == b':' {
                             let len = num as usize;
                             let mut buf = vec![0u8; len];
-                            reader
-                                .read_exact(&mut buf)
-                                .await
-                                .map_err(|e| YsError::external_error(e))?;
-                            reader
-                                .read_exact(&mut b)
-                                .await
-                                .map_err(|e| YsError::external_error(e))?;
+                            reader.read_exact(&mut buf).await.map_err(YsError::external_error)?;
+                            reader.read_exact(&mut b).await.map_err(YsError::external_error)?;
                             return Ok(P4Item::String(buf));
-                        } else if b[0] == b' ' {
+                        }
+                        else if b[0] == b' ' {
                             return Ok(P4Item::Number(num));
-                        } else if b[0] >= b'0' && b[0] <= b'9' {
+                        }
+                        else if b[0] >= b'0' && b[0] <= b'9' {
                             num = num * 10 + (b[0] - b'0') as i64;
-                        } else {
-                            return Err(YsError::invalid_object(format!(
-                                "Unexpected character in P4 item: {}",
-                                b[0] as char
-                            )));
+                        }
+                        else {
+                            return Err(YsError::invalid_object(format!("Unexpected character in P4 item: {}", b[0] as char)));
                         }
                     }
                 }
@@ -88,20 +77,16 @@ where
                     let mut list = Vec::new();
                     loop {
                         let mut b = [0u8; 1];
-                        reader
-                            .read_exact(&mut b)
-                            .await
-                            .map_err(|e| YsError::external_error(e))?;
+                        reader.read_exact(&mut b).await.map_err(YsError::external_error)?;
                         if b[0] == b')' {
                             let mut space = [0u8; 1];
-                            reader
-                                .read_exact(&mut space)
-                                .await
-                                .map_err(|e| YsError::external_error(e))?;
+                            reader.read_exact(&mut space).await.map_err(YsError::external_error)?;
                             return Ok(P4Item::List(list));
-                        } else if b[0] == b' ' {
+                        }
+                        else if b[0] == b' ' {
                             continue;
-                        } else {
+                        }
+                        else {
                             list.push(Self::read_item_with_first_byte(reader, b[0]).await?);
                         }
                     }
@@ -110,30 +95,23 @@ where
                     let mut map = Vec::new();
                     loop {
                         let mut b = [0u8; 1];
-                        reader
-                            .read_exact(&mut b)
-                            .await
-                            .map_err(|e| YsError::external_error(e))?;
+                        reader.read_exact(&mut b).await.map_err(YsError::external_error)?;
                         if b[0] == b'}' {
                             let mut space = [0u8; 1];
-                            reader
-                                .read_exact(&mut space)
-                                .await
-                                .map_err(|e| YsError::external_error(e))?;
+                            reader.read_exact(&mut space).await.map_err(YsError::external_error)?;
                             return Ok(P4Item::Map(map));
-                        } else if b[0] == b' ' {
+                        }
+                        else if b[0] == b' ' {
                             continue;
-                        } else {
+                        }
+                        else {
                             let key = Self::read_item_with_first_byte(reader, b[0]).await?;
                             let value = Self::read_item(reader).await?;
                             map.push((key, value));
                         }
                     }
                 }
-                _ => Err(YsError::invalid_object(format!(
-                    "Unexpected start of P4 item: {}",
-                    first as char
-                ))),
+                _ => Err(YsError::invalid_object(format!("Unexpected start of P4 item: {}", first as char))),
             }
         })
     }
@@ -146,51 +124,27 @@ where
         Box::pin(async move {
             match item {
                 P4Item::Number(n) => {
-                    writer
-                        .write_all(format!("{} ", n).as_bytes())
-                        .await
-                        .map_err(|e| YsError::external_error(e))?;
+                    writer.write_all(format!("{} ", n).as_bytes()).await.map_err(YsError::external_error)?;
                 }
                 P4Item::String(s) => {
-                    writer
-                        .write_all(format!("{}:", s.len()).as_bytes())
-                        .await
-                        .map_err(|e| YsError::external_error(e))?;
-                    writer
-                        .write_all(s)
-                        .await
-                        .map_err(|e| YsError::external_error(e))?;
-                    writer
-                        .write_all(b" ")
-                        .await
-                        .map_err(|e| YsError::external_error(e))?;
+                    writer.write_all(format!("{}:", s.len()).as_bytes()).await.map_err(YsError::external_error)?;
+                    writer.write_all(s).await.map_err(YsError::external_error)?;
+                    writer.write_all(b" ").await.map_err(YsError::external_error)?;
                 }
                 P4Item::List(l) => {
-                    writer
-                        .write_all(b"( ")
-                        .await
-                        .map_err(|e| YsError::external_error(e))?;
+                    writer.write_all(b"( ").await.map_err(YsError::external_error)?;
                     for i in l {
                         Self::write_item(writer, i).await?;
                     }
-                    writer
-                        .write_all(b") ")
-                        .await
-                        .map_err(|e| YsError::external_error(e))?;
+                    writer.write_all(b") ").await.map_err(YsError::external_error)?;
                 }
                 P4Item::Map(m) => {
-                    writer
-                        .write_all(b"{ ")
-                        .await
-                        .map_err(|e| YsError::external_error(e))?;
+                    writer.write_all(b"{ ").await.map_err(YsError::external_error)?;
                     for (k, v) in m {
                         Self::write_item(writer, k).await?;
                         Self::write_item(writer, v).await?;
                     }
-                    writer
-                        .write_all(b"} ")
-                        .await
-                        .map_err(|e| YsError::external_error(e))?;
+                    writer.write_all(b"} ").await.map_err(YsError::external_error)?;
                 }
             }
             Ok(())
@@ -209,10 +163,10 @@ where
             ]),
         ]);
         Self::write_item(stream, &greeting).await?;
-        stream.flush().await.map_err(|e| YsError::external_error(e))?;
-        
+        stream.flush().await.map_err(YsError::external_error)?;
+
         let _response = Self::read_item(stream).await?;
-        
+
         let auth_greeting = P4Item::List(vec![
             P4Item::String(b"success".to_vec()),
             P4Item::List(vec![
@@ -221,7 +175,7 @@ where
             ]),
         ]);
         Self::write_item(stream, &auth_greeting).await?;
-        stream.flush().await.map_err(|e| YsError::external_error(e))?;
+        stream.flush().await.map_err(YsError::external_error)?;
 
         Ok(())
     }
@@ -256,10 +210,12 @@ where
                     "submit" => self.handle_submit(stream, &items[1..]).await,
                     _ => self.handle_unknown_command(stream, &cmd).await,
                 }
-            } else {
+            }
+            else {
                 self.handle_unknown_command(stream, "invalid-command").await
             }
-        } else {
+        }
+        else {
             self.handle_unknown_command(stream, "invalid-command").await
         }
     }
@@ -274,29 +230,23 @@ where
             ]),
         ]);
         Self::write_item(stream, &response).await?;
-        stream.flush().await.map_err(|e| YsError::external_error(e))?;
+        stream.flush().await.map_err(YsError::external_error)?;
         Ok(())
     }
 
     /// 处理 files 命令，列出仓库中的文件
     async fn handle_files(&self, stream: &mut TcpStream, _args: &[P4Item]) -> Result<(), YsError> {
-        let response = P4Item::List(vec![
-            P4Item::String(b"success".to_vec()),
-            P4Item::List(vec![]),
-        ]);
+        let response = P4Item::List(vec![P4Item::String(b"success".to_vec()), P4Item::List(vec![])]);
         Self::write_item(stream, &response).await?;
-        stream.flush().await.map_err(|e| YsError::external_error(e))?;
+        stream.flush().await.map_err(YsError::external_error)?;
         Ok(())
     }
 
     /// 处理 sync 命令，同步仓库内容到工作区
     async fn handle_sync(&self, stream: &mut TcpStream, _args: &[P4Item]) -> Result<(), YsError> {
-        let response = P4Item::List(vec![
-            P4Item::String(b"success".to_vec()),
-            P4Item::List(vec![]),
-        ]);
+        let response = P4Item::List(vec![P4Item::String(b"success".to_vec()), P4Item::List(vec![])]);
         Self::write_item(stream, &response).await?;
-        stream.flush().await.map_err(|e| YsError::external_error(e))?;
+        stream.flush().await.map_err(YsError::external_error)?;
         Ok(())
     }
 
@@ -304,12 +254,10 @@ where
     async fn handle_submit(&self, stream: &mut TcpStream, _args: &[P4Item]) -> Result<(), YsError> {
         let response = P4Item::List(vec![
             P4Item::String(b"success".to_vec()),
-            P4Item::Map(vec![
-                (P4Item::String(b"change".to_vec()), P4Item::Number(1)),
-            ]),
+            P4Item::Map(vec![(P4Item::String(b"change".to_vec()), P4Item::Number(1))]),
         ]);
         Self::write_item(stream, &response).await?;
-        stream.flush().await.map_err(|e| YsError::external_error(e))?;
+        stream.flush().await.map_err(YsError::external_error)?;
         Ok(())
     }
 
@@ -323,7 +271,7 @@ where
             ]),
         ]);
         Self::write_item(stream, &response).await?;
-        stream.flush().await.map_err(|e| YsError::external_error(e))?;
+        stream.flush().await.map_err(YsError::external_error)?;
         Ok(())
     }
 
@@ -334,9 +282,9 @@ where
     }
 }
 
-impl<S> Gateway for P4Gateway<S> 
-where 
-    S: StorageBackend + 'static
+impl<S> Gateway for P4Gateway<S>
+where
+    S: StorageBackend + 'static,
 {
     /// 获取网关的名称
     fn name(&self) -> &'static str {
@@ -348,12 +296,12 @@ where
         if let Ok(addr) = stream.peer_addr() {
             println!("Handling P4 connection from {:?}", addr);
         }
-        
+
         if let Err(e) = self.process_p4_request(&mut stream).await {
             eprintln!("P4 request error: {:?}", e);
             return Err(e);
         }
-        
+
         Ok(())
     }
 }
