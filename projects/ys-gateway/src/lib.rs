@@ -10,3 +10,21 @@ pub trait Gateway: Send + Sync {
     /// 处理进入的连接
     async fn handle(&self, stream: TcpStream) -> Result<(), YsError>;
 }
+
+#[cfg(feature = "git")]
+pub mod git;
+
+#[cfg(feature = "p4")]
+pub mod p4;
+
+#[cfg(feature = "svn")]
+pub mod svn;
+
+#[cfg(feature = "git")]
+pub use git::GitGateway;
+
+#[cfg(feature = "p4")]
+pub use p4::P4Gateway;
+
+#[cfg(feature = "svn")]
+pub use svn::{SvnGateway, SvnItem};

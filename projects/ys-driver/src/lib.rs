@@ -1,6 +1,20 @@
 use std::path::Path;
 use ys_types::{ObjectID, YsError};
 
+#[cfg(feature = "git")]
+pub mod git;
+#[cfg(feature = "p4")]
+pub mod p4;
+#[cfg(feature = "svn")]
+pub mod svn;
+
+#[cfg(feature = "git")]
+pub use git::GitDriver;
+#[cfg(feature = "p4")]
+pub use p4::P4Driver;
+#[cfg(feature = "svn")]
+pub use svn::SvnDriver;
+
 /// Driver trait 定义了客户端如何与不同的版本控制协议进行交互
 pub trait Driver: Send + Sync {
     /// 获取驱动的名称 (例如 "git", "svn", "p4")

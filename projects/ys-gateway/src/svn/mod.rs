@@ -2,18 +2,23 @@ use tokio::net::TcpStream;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use ys_types::YsError;
 use ys_storage::StorageBackend;
-use ys_gateway::Gateway;
+use crate::Gateway;
 use std::future::Future;
 use std::pin::Pin;
 
+/// Subversion (SVN) 网关实现，用于处理 SVN 协议的连接和请求
 pub struct SvnGateway<S> {
     store: S,
 }
 
+/// SVN 协议项，用于表示 SVN 协议中的各种数据类型
 #[derive(Debug, PartialEq, Eq)]
 pub enum SvnItem {
+    /// 数字类型
     Number(i64),
+    /// 字符串类型
     String(Vec<u8>),
+    /// 列表类型
     List(Vec<SvnItem>),
 }
 
@@ -21,10 +26,12 @@ impl<S> SvnGateway<S>
 where 
     S: StorageBackend + 'static
 {
+    /// 创建一个新的 SvnGateway 实例
     pub fn new(store: S) -> Self {
         Self { store }
     }
 
+    /// 从异步读取器中读取一个 SVN 协议项
     async fn read_item<R: AsyncReadExt + Unpin + Send>(reader: &mut R) -> Result<SvnItem, YsError> {
         let mut b = [0u8; 1];
         reader
@@ -35,6 +42,7 @@ where
         Self::read_item_with_first_byte(reader, b[0]).await
     }
 
+    /// 从异步读取器中读取一个 SVN 协议项，已知第一个字节
     fn read_item_with_first_byte<'a, R: AsyncReadExt + Unpin + Send + 'a>(
         reader: &'a mut R,
         first: u8,
@@ -82,7 +90,6 @@ where
                             .await
                             .map_err(|e| YsError::external_error(e))?;
                         if b[0] == b')' {
-                            // Read trailing space
                             let mut space = [0u8; 1];
                             reader
                                 .read_exact(&mut space)
@@ -104,6 +111,7 @@ where
         })
     }
 
+    /// 将一个 SVN 协议项写入到异步写入器中
     fn write_item<'a, W: AsyncWriteExt + Unpin + Send + 'a>(
         writer: &'a mut W,
         item: &'a SvnItem,
@@ -148,9 +156,8 @@ where
         })
     }
 
+    /// 处理 SVN 协议握手
     async fn handle_handshake(&self, stream: &mut TcpStream) -> Result<(), YsError> {
-        // 1. Server sends greeting
-        // ( success ( 2 2 ( ) ( edit-pipeline ) ) )
         let greeting = SvnItem::List(vec![
             SvnItem::String(b"success".to_vec()),
             SvnItem::List(vec![
@@ -163,12 +170,8 @@ where
         Self::write_item(stream, &greeting).await?;
         stream.flush().await.map_err(|e| YsError::external_error(e))?;
         
-        // 2. Client sends response
-        // ( 2 ( edit-pipeline ) 24:svn://localhost/repo )
         let _response = Self::read_item(stream).await?;
         
-        // 3. Server sends auth greeting
-        // ( success ( ( ANONYMOUS ) 36:00000000-0000-0000-0000-000000000000 ) )
         let auth_greeting = SvnItem::List(vec![
             SvnItem::String(b"success".to_vec()),
             SvnItem::List(vec![
@@ -202,8 +205,6 @@ where
         }
         
         println!("SVN handshake successful");
-        
-        // TODO: 实现 SVN 命令循环 (get-latest-rev, etc.)
         
         Ok(())
     }

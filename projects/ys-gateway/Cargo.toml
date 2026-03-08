@@ -12,7 +12,12 @@ exclude = ["package.json", "tests/**"]
 
 [dependencies]
 tokio = { workspace = true, features = ["full"] }
+tokio-util = { workspace = true, features = ["codec"] }
+bytes = { workspace = true }
+futures = { workspace = true }
 ys-types = { workspace = true }
+ys-protocol = { workspace = true }
+ys-storage = { workspace = true }
 
 [dev-dependencies]
 tokio-test = { workspace = true }
@@ -20,7 +25,10 @@ tokio = { workspace = true, features = ["full"] }
 tempfile = { workspace = true }
 
 [features]
-default = []
+default = ["git", "p4", "svn"]
+git = []
+p4 = []
+svn = []
 
 [package.metadata.docs.rs]
 all-features = true

@@ -3,10 +3,11 @@ use tokio_util::codec::Framed;
 use futures::{StreamExt, SinkExt};
 use ys_types::YsError;
 use ys_storage::StorageBackend;
-use ys_gateway::Gateway;
+use crate::Gateway;
 use ys_protocol::git::{PktLine, PktLineCodec};
 use bytes::Bytes;
 
+/// Git 网关实现，用于处理 Git 协议的连接和请求
 pub struct GitGateway<S> {
     store: S,
 }
@@ -15,6 +16,7 @@ impl<S> GitGateway<S>
 where 
     S: StorageBackend + 'static
 {
+    /// 创建一个新的 GitGateway 实例
     pub fn new(store: S) -> Self {
         Self { store }
     }
