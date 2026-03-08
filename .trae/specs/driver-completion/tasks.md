@@ -92,7 +92,7 @@
 - **Test Requirements**:
   - `human-judgement` TR-8.1: 选择的库能够满足 clone, fetch, push 的基本需求
 
-## [/] Task 9: 实现 P4Driver 的核心功能
+## [x] Task 9: 实现 P4Driver 的核心功能
 - **Priority**: P2
 - **Depends On**: [Task 1, Task 8]
 - **Description**: 
@@ -103,7 +103,7 @@
   - `programmatic` TR-9.1: 代码能够通过编译检查
   - `human-judgement` TR-9.2: 所有公共 API 都有完整的中文文档注释
 
-## [ ] Task 10: 运行完整项目编译检查
+## [x] Task 10: 运行完整项目编译检查
 - **Priority**: P0
 - **Depends On**: [Task 3, Task 7, Task 9]
 - **Description**: 
