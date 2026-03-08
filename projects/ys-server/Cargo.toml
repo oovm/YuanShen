@@ -11,8 +11,10 @@ edition = "2021"
 exclude = ["package.json", "tests/**"]
 
 [dependencies]
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
 ys-types = { workspace = true }
+ys-storage = { workspace = true }
+ys-gateway = { workspace = true }
 
 [dev-dependencies]
 tokio-test = { workspace = true }

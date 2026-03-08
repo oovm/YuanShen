@@ -40,6 +40,7 @@ clap_builder = "4.5.2"
 tokio-test = "0.4.4"
 tempfile = "3.10.1"
 uuid = { version = "1.8.0", features = ["v4", "v5", "serde"] }
+git2 = "0.19"
 
 [profile.release]
 lto = true

@@ -184,16 +184,104 @@ where
 
         Ok(())
     }
+
+    /// 命令处理循环，处理 SVN 协议中的各种命令
+    async fn command_loop(&self, stream: &mut TcpStream) -> Result<(), YsError> {
+        loop {
+            match Self::read_item(stream).await {
+                Ok(item) => {
+                    if let Err(e) = self.dispatch_command(stream, item).await {
+                        eprintln!("Error handling command: {:?}", e);
+                        return Err(e);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Error reading command: {:?}", e);
+                    return Err(e);
+                }
+            }
+        }
+    }
+
+    /// 分发命令到对应的处理函数
+    async fn dispatch_command(&self, stream: &mut TcpStream, item: SvnItem) -> Result<(), YsError> {
+        if let SvnItem::List(items) = item {
+            if let Some(SvnItem::String(cmd_bytes)) = items.first() {
+                let cmd = String::from_utf8_lossy(cmd_bytes);
+                match cmd.as_ref() {
+                    "get-latest-rev" => self.handle_get_latest_rev(stream, &items[1..]).await,
+                    "get-dir" => self.handle_get_dir(stream, &items[1..]).await,
+                    "get-file" => self.handle_get_file(stream, &items[1..]).await,
+                    _ => self.handle_unknown_command(stream, &cmd).await,
+                }
+            } else {
+                self.handle_unknown_command(stream, "invalid-command").await
+            }
+        } else {
+            self.handle_unknown_command(stream, "invalid-command").await
+        }
+    }
+
+    /// 处理 get-latest-rev 命令，获取最新的修订版本号
+    async fn handle_get_latest_rev(&self, stream: &mut TcpStream, _args: &[SvnItem]) -> Result<(), YsError> {
+        let response = SvnItem::List(vec![
+            SvnItem::String(b"success".to_vec()),
+            SvnItem::Number(1),
+        ]);
+        Self::write_item(stream, &response).await?;
+        stream.flush().await.map_err(|e| YsError::external_error(e))?;
+        Ok(())
+    }
+
+    /// 处理 get-dir 命令，获取目录内容
+    async fn handle_get_dir(&self, stream: &mut TcpStream, _args: &[SvnItem]) -> Result<(), YsError> {
+        let response = SvnItem::List(vec![
+            SvnItem::String(b"success".to_vec()),
+            SvnItem::List(vec![]),
+            SvnItem::Number(1),
+        ]);
+        Self::write_item(stream, &response).await?;
+        stream.flush().await.map_err(|e| YsError::external_error(e))?;
+        Ok(())
+    }
+
+    /// 处理 get-file 命令，获取文件内容
+    async fn handle_get_file(&self, stream: &mut TcpStream, _args: &[SvnItem]) -> Result<(), YsError> {
+        let response = SvnItem::List(vec![
+            SvnItem::String(b"success".to_vec()),
+            SvnItem::String(b"".to_vec()),
+            SvnItem::Number(1),
+        ]);
+        Self::write_item(stream, &response).await?;
+        stream.flush().await.map_err(|e| YsError::external_error(e))?;
+        Ok(())
+    }
+
+    /// 处理未知命令
+    async fn handle_unknown_command(&self, stream: &mut TcpStream, cmd: &str) -> Result<(), YsError> {
+        let response = SvnItem::List(vec![
+            SvnItem::String(b"failure".to_vec()),
+            SvnItem::List(vec![
+                SvnItem::String(b"ra_illegal".to_vec()),
+                SvnItem::String(format!("Unknown command: {}", cmd).into_bytes()),
+            ]),
+        ]);
+        Self::write_item(stream, &response).await?;
+        stream.flush().await.map_err(|e| YsError::external_error(e))?;
+        Ok(())
+    }
 }
 
 impl<S> Gateway for SvnGateway<S> 
 where 
     S: StorageBackend + 'static
 {
+    /// 获取网关名称
     fn name(&self) -> &'static str {
         "svn"
     }
 
+    /// 处理 SVN 协议连接
     async fn handle(&self, mut stream: TcpStream) -> Result<(), YsError> {
         if let Ok(addr) = stream.peer_addr() {
             println!("Handling SVN connection from {:?}", addr);
@@ -206,6 +294,6 @@ where
         
         println!("SVN handshake successful");
         
-        Ok(())
+        self.command_loop(&mut stream).await
     }
 }

@@ -132,6 +132,28 @@ impl DotYuanShenClient {
         Ok(self.dot_root.join("branches").join(&branch).try_exists()?)
     }
 
+    /// Lists all existing branches
+    pub fn list_branches(&self) -> Result<Vec<String>, YsError> {
+        let branches_dir = self.dot_root.join("branches");
+        let mut branches = Vec::new();
+        
+        if !branches_dir.exists() {
+            return Ok(branches);
+        }
+        
+        for entry in read_dir(branches_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_file() {
+                if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                    branches.push(name.to_string());
+                }
+            }
+        }
+        
+        Ok(branches)
+    }
+
     pub fn ignores(&self) -> Result<IgnoreRules, YsError> {
         Ok(read_json(&self.dot_root.join("ignores"))?)
     }
