@@ -1,6 +1,8 @@
 {
     "private": true,
     "scripts": {
+        "check:ci": "node scripts/check.mjs",
+        "check": "node scripts/check.mjs",
         "doc": "cargo doc --no-deps --all-features",
         "test": "cargo test --release",
         "fmt": "cargo fmt --all",

@@ -13,6 +13,10 @@ time-travel.*
 target/
 Cargo.lock
 
+# Node
+node_modules/
+cache/
+dist/
 
 # YuanShen
 .ys/
