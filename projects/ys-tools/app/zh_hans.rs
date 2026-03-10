@@ -26,7 +26,8 @@ enum YsCommand {
     Checkout(YuanShenCheckout),
     Branch(YuanShenBranch),
     GarbageCollect,
-    External,
+    #[allow(dead_code)]
+    External(Vec<String>),
 }
 
 #[automatically_derived]
@@ -50,7 +51,11 @@ impl FromArgMatches for YsCommand {
                     "commit" => Self::Commit(FromArgMatches::from_arg_matches_mut(sub_args)?),
                     "changes" => Self::Changes,
                     "garbage-collect" => Self::GarbageCollect,
-                    _ => Self::External,
+                    _ => Self::External(
+                        std::iter::once(String::from(cmd))
+                            .chain(sub_args.remove_many::<String>("").unwrap_or_default().map(String::from))
+                            .collect::<Vec<_>>(),
+                    ),
                 };
                 return Ok(ys_cmd);
             }
@@ -220,7 +225,7 @@ pub async fn main() -> Result<(), YsError> {
         Rebase(_) => {}
         Reset(_) => {}
         Orphan(_) => {}
-        External => {}
+        External(_) => {}
         GarbageCollect => {}
     }
     Ok(())

@@ -19,12 +19,6 @@ ys-server = { path = "projects/ys-server", version = "0.0.0" }
 ys = { path = "projects/ys", version = "0.0.1" }
 ys-tools = { path = "projects/ys-tools", version = "0.0.1" }
 ys-ignore = { path = "projects/ys-ignore", version = "0.0.1" }
-ys-driver-git = { path = "projects/ys-driver-git", version = "0.0.0" }
-ys-driver-p4 = { path = "projects/ys-driver-p4", version = "0.0.0" }
-ys-driver-svn = { path = "projects/ys-driver-svn", version = "0.0.0" }
-ys-gateway-git = { path = "projects/ys-gateway-git", version = "0.0.0" }
-ys-gateway-p4 = { path = "projects/ys-gateway-p4", version = "0.0.0" }
-ys-gateway-svn = { path = "projects/ys-gateway-svn", version = "0.0.0" }
 
 # External dependencies
 dashmap = "5.5.3"

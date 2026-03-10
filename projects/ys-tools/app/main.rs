@@ -30,7 +30,8 @@ enum YsCommand {
     #[command(alias = "gc")]
     GarbageCollect,
     #[command(external_subcommand)]
-    External,
+    #[allow(dead_code)]
+    External(Vec<String>),
 }
 
 #[tokio::main]
@@ -60,7 +61,7 @@ pub async fn main() -> Result<(), YsError> {
         Rebase(sub) => sub.rebase().await.unwrap(),
         Reset(sub) => sub.reset().await?,
         Orphan(sub) => sub.orphan().await?,
-        External => {}
+        External(_) => {}
         GarbageCollect => {
             let dir = current_dir()?;
             let store = ys_storage::LocalDotYuanShen::new(dir.join(".ys")).unwrap();
