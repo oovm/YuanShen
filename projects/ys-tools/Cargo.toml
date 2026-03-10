@@ -1,5 +1,5 @@
 [package]
-name = "ys-cli"
+name = "ys-tools"
 version = "0.0.1"
 authors = ["Aster <192607617@qq.com>"]
 description = "A modern source code and asset version management system"

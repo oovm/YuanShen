@@ -1,0 +1,29 @@
+[package]
+name = "ys"
+version = "0.0.1"
+authors = ["Aster <192607617@qq.com>"]
+description = "A modern source code and asset version management system"
+repository = "https://github.com/oovm/YuanShen"
+documentation = "https://docs.rs/yuan-shen"
+readme = "readme.md"
+license = "MPL-2.0"
+edition = "2021"
+exclude = ["package.json", "tests/**"]
+
+[dependencies]
+ys-types = { workspace = true }
+ys-storage = { workspace = true }
+ys-gateway = { workspace = true }
+ys-protocol = { workspace = true }
+ys-driver = { workspace = true }
+ys-client = { workspace = true }
+ys-server = { workspace = true }
+ys-ignore = { workspace = true }
+
+[dev-dependencies]
+
+[features]
+default = []
+
+[package.metadata.docs.rs]
+all-features = true
