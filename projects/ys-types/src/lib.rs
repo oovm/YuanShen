@@ -21,6 +21,6 @@ pub use crate::{
         initialize,
     },
     objects::{ObjectID, IgnoreRules, commit_id::{Commit, SnapShotData}},
-    traits::{BranchProxy, ObjectProxy, ObjectStore, YuanShenID, YuanShenObject},
+    traits::{BranchProxy, ObjectProxy, ObjectStore, GarbageCollect, YuanShenID, YuanShenObject},
     utils::async_test,
 };

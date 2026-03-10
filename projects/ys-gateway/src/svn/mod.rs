@@ -10,7 +10,7 @@ use ys_types::YsError;
 /// Subversion (SVN) 网关实现，用于处理 SVN 协议的连接和请求
 pub struct SvnGateway<S> {
     /// 存储后端，用于访问存储的对象
-    _store: S,
+    store: S,
 }
 
 /// SVN 协议项，用于表示 SVN 协议中的各种数据类型
@@ -30,7 +30,7 @@ where
 {
     /// 创建一个新的 SvnGateway 实例
     pub fn new(store: S) -> Self {
-        Self { _store: store }
+        Self { store }
     }
 
     /// 从异步读取器中读取一个 SVN 协议项
@@ -191,7 +191,9 @@ where
 
     /// 处理 get-latest-rev 命令，获取最新的修订版本号
     async fn handle_get_latest_rev(&self, stream: &mut TcpStream, _args: &[SvnItem]) -> Result<(), YsError> {
-        let response = SvnItem::List(vec![SvnItem::String(b"success".to_vec()), SvnItem::Number(1)]);
+        let branches = self.store.list_branches().await?;
+        let latest_rev = if branches.is_empty() { 1 } else { branches.len() as i64 };
+        let response = SvnItem::List(vec![SvnItem::String(b"success".to_vec()), SvnItem::Number(latest_rev)]);
         Self::write_item(stream, &response).await?;
         stream.flush().await.map_err(YsError::external_error)?;
         Ok(())
@@ -199,16 +201,55 @@ where
 
     /// 处理 get-dir 命令，获取目录内容
     async fn handle_get_dir(&self, stream: &mut TcpStream, _args: &[SvnItem]) -> Result<(), YsError> {
-        let response = SvnItem::List(vec![SvnItem::String(b"success".to_vec()), SvnItem::List(vec![]), SvnItem::Number(1)]);
+        let branches = self.store.list_branches().await?;
+        let mut dir_entries = Vec::new();
+
+        for (name, _id) in &branches {
+            let entry = SvnItem::List(vec![
+                SvnItem::String(name.as_bytes().to_vec()),
+                SvnItem::List(vec![
+                    SvnItem::String(b"kind".to_vec()),
+                    SvnItem::String(b"file".to_vec()),
+                ]),
+            ]);
+            dir_entries.push(entry);
+        }
+
+        let latest_rev = if branches.is_empty() { 1 } else { branches.len() as i64 };
+        let response = SvnItem::List(vec![
+            SvnItem::String(b"success".to_vec()),
+            SvnItem::List(dir_entries),
+            SvnItem::Number(latest_rev),
+        ]);
         Self::write_item(stream, &response).await?;
         stream.flush().await.map_err(YsError::external_error)?;
         Ok(())
     }
 
     /// 处理 get-file 命令，获取文件内容
-    async fn handle_get_file(&self, stream: &mut TcpStream, _args: &[SvnItem]) -> Result<(), YsError> {
-        let response =
-            SvnItem::List(vec![SvnItem::String(b"success".to_vec()), SvnItem::String(b"".to_vec()), SvnItem::Number(1)]);
+    async fn handle_get_file(&self, stream: &mut TcpStream, args: &[SvnItem]) -> Result<(), YsError> {
+        let branches = self.store.list_branches().await?;
+        let mut file_content = Vec::new();
+
+        if let Some(SvnItem::String(path_bytes)) = args.first() {
+            let path_str = String::from_utf8_lossy(path_bytes);
+            for (name, id) in &branches {
+                if name.as_str() == path_str {
+                    if self.store.has(*id).await? {
+                        let text_file = ys_types::objects::TextFile { file_id: *id };
+                        file_content = self.store.get_buffer(text_file).await?;
+                    }
+                    break;
+                }
+            }
+        }
+
+        let latest_rev = if branches.is_empty() { 1 } else { branches.len() as i64 };
+        let response = SvnItem::List(vec![
+            SvnItem::String(b"success".to_vec()),
+            SvnItem::String(file_content),
+            SvnItem::Number(latest_rev),
+        ]);
         Self::write_item(stream, &response).await?;
         stream.flush().await.map_err(YsError::external_error)?;
         Ok(())
@@ -233,12 +274,12 @@ impl<S> Gateway for SvnGateway<S>
 where
     S: StorageBackend + 'static,
 {
-    /// 获取网关名称
+    /// 获取网关的名称
     fn name(&self) -> &'static str {
         "svn"
     }
 
-    /// 处理 SVN 协议连接
+    /// 处理进入的 SVN 协议连接
     async fn handle(&self, mut stream: TcpStream) -> Result<(), YsError> {
         if let Ok(addr) = stream.peer_addr() {
             println!("Handling SVN connection from {:?}", addr);

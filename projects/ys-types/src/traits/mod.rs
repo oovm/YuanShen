@@ -62,3 +62,10 @@ pub trait BranchProxy: Send + Sync {
     /// List all branches and their tips
     async fn list_branches(&self) -> Result<Vec<(String, ObjectID)>, YsError>;
 }
+
+/// 垃圾收集功能的 trait
+#[allow(async_fn_in_trait)]
+pub trait GarbageCollect: Send + Sync {
+    /// 执行垃圾收集，删除所有不可达的对象
+    async fn garbage_collect(&self) -> Result<usize, YsError>;
+}

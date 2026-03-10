@@ -10,13 +10,13 @@ use ys_types::YsError;
 /// Perforce (P4) 协议项，用于表示 P4 协议中的各种数据类型
 #[derive(Debug, PartialEq, Eq)]
 pub enum P4Item {
-    /// 数字类型
+    /// 数字类型，表示整数值
     Number(i64),
-    /// 字符串类型
+    /// 字符串类型，表示字节数组
     String(Vec<u8>),
-    /// 列表类型
+    /// 列表类型，表示 P4 协议项的有序集合
     List(Vec<P4Item>),
-    /// 字典/映射类型
+    /// 映射类型，表示键值对的集合
     Map(Vec<(P4Item, P4Item)>),
 }
 

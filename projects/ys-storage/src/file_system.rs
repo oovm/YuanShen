@@ -1,8 +1,9 @@
 use ys_types::{
     objects::{ObjectID, TextFile},
-    ObjectProxy, BranchProxy,
-    YsError, YuanShenObject,
+    ObjectProxy, BranchProxy, GarbageCollect,
+    YsError, YuanShenObject, Commit, SnapShotTree, DirectoryEntry, DirectoryObject,
 };
+use std::collections::{BTreeSet, VecDeque};
 use std::path::{Path, PathBuf};
 
 /// 本地文件系统对象储存
@@ -154,5 +155,154 @@ impl BranchProxy for LocalDotYuanShen {
             branches.push((name, id));
         }
         Ok(branches)
+    }
+}
+
+impl LocalDotYuanShen {
+    /// 收集所有可达对象的 ObjectID
+    async fn collect_reachable_objects(&self) -> Result<BTreeSet<ObjectID>, YsError> {
+        let mut reachable = BTreeSet::new();
+        let mut queue = VecDeque::new();
+
+        let branches = self.list_branches().await?;
+        for (_name, tip) in branches {
+            queue.push_back(tip);
+        }
+
+        while let Some(object_id) = queue.pop_front() {
+            if reachable.contains(&object_id) {
+                continue;
+            }
+            reachable.insert(object_id);
+
+            if let Ok(commit) = self.get_typed::<Commit>(object_id).await {
+                queue.push_back(commit.tree);
+                for parent in commit.parents {
+                    queue.push_back(parent);
+                }
+            } else if let Ok(tree) = self.get_typed::<SnapShotTree>(object_id).await {
+                self.collect_tree_entries(&tree.root, &mut reachable, &mut queue).await;
+            } else if let Ok(directory) = self.get_typed::<DirectoryObject>(object_id).await {
+                self.collect_tree_entries(&directory.entries, &mut reachable, &mut queue).await;
+            }
+        }
+
+        Ok(reachable)
+    }
+
+    /// 从目录条目中收集对象
+    async fn collect_tree_entries(
+        &self,
+        entries: &std::collections::BTreeMap<String, DirectoryEntry>,
+        reachable: &mut BTreeSet<ObjectID>,
+        queue: &mut VecDeque<ObjectID>,
+    ) {
+        for entry in entries.values() {
+            match entry {
+                DirectoryEntry::Directory(dir) => {
+                    for (_, child_entry) in &dir.entries {
+                        self.collect_entry_object(child_entry, reachable, queue).await;
+                    }
+                }
+                DirectoryEntry::TextStandalone(text_file) => {
+                    if !reachable.contains(&text_file.file_id) {
+                        reachable.insert(text_file.file_id);
+                    }
+                }
+                DirectoryEntry::TextIncremental(_) => {}
+                DirectoryEntry::Subtree(subtree) => {
+                    queue.push_back(subtree.id);
+                }
+            }
+        }
+    }
+
+    /// 收集单个目录条目引用的对象
+    async fn collect_entry_object(
+        &self,
+        entry: &DirectoryEntry,
+        reachable: &mut BTreeSet<ObjectID>,
+        queue: &mut VecDeque<ObjectID>,
+    ) {
+        match entry {
+            DirectoryEntry::Directory(_) => {}
+            DirectoryEntry::TextStandalone(text_file) => {
+                if !reachable.contains(&text_file.file_id) {
+                    reachable.insert(text_file.file_id);
+                }
+            }
+            DirectoryEntry::TextIncremental(_) => {}
+            DirectoryEntry::Subtree(subtree) => {
+                queue.push_back(subtree.id);
+            }
+        }
+    }
+
+    /// 列出存储中的所有对象
+    async fn list_all_objects(&self) -> Result<Vec<ObjectID>, YsError> {
+        let mut objects = Vec::new();
+        let objects_dir = self.root.clone();
+
+        if !objects_dir.exists() {
+            return Ok(objects);
+        }
+
+        let mut entries = tokio::fs::read_dir(objects_dir).await.map_err(|e| YsError::external_error(e))?;
+        while let Some(entry) = entries.next_entry().await.map_err(|e| YsError::external_error(e))? {
+            let path = entry.path();
+            if path.is_dir() {
+                let sub_dir_name = entry.file_name().to_string_lossy().to_string();
+                if sub_dir_name.len() == 2 && sub_dir_name.chars().all(|c| c.is_ascii_hexdigit()) {
+                    let mut sub_entries = tokio::fs::read_dir(path).await.map_err(|e| YsError::external_error(e))?;
+                    while let Some(sub_entry) = sub_entries.next_entry().await.map_err(|e| YsError::external_error(e))? {
+                        let file_name = sub_entry.file_name().to_string_lossy().to_string();
+                        let full_id_str = format!("{}{}", sub_dir_name, file_name);
+                        if let Ok(object_id) = full_id_str.parse() {
+                            objects.push(object_id);
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(objects)
+    }
+
+    /// 删除指定的对象
+    async fn delete_object(&self, id: ObjectID) -> Result<bool, YsError> {
+        let path = self.store_file(id);
+        if path.exists() {
+            tokio::fs::remove_file(path.clone()).await.map_err(|e| YsError::external_error(e))?;
+            if let Some(parent) = path.parent() {
+                if let Ok(mut entries) = tokio::fs::read_dir(parent).await {
+                    let has_entries = entries.next_entry().await.is_ok_and(|e| e.is_some());
+                    if !has_entries {
+                        let _ = tokio::fs::remove_dir(parent).await;
+                    }
+                }
+            }
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+}
+
+impl GarbageCollect for LocalDotYuanShen {
+    /// 执行垃圾收集，删除所有不可达的对象
+    async fn garbage_collect(&self) -> Result<usize, YsError> {
+        let reachable = self.collect_reachable_objects().await?;
+        let all_objects = self.list_all_objects().await?;
+
+        let mut deleted_count = 0;
+        for object_id in all_objects {
+            if !reachable.contains(&object_id) {
+                if self.delete_object(object_id).await? {
+                    deleted_count += 1;
+                }
+            }
+        }
+
+        Ok(deleted_count)
     }
 }

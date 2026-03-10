@@ -37,6 +37,16 @@ impl YsError {
     pub fn missing_object(id: ObjectID) -> Self {
         Self { kind: Box::new(YsErrorKind::MissingObject { id }) }
     }
+
+    /// 创建一个 stash 为空的错误
+    pub fn stash_empty() -> Self {
+        Self { kind: Box::new(YsErrorKind::StashEmpty) }
+    }
+
+    /// 创建一个 stash 索引越界的错误
+    pub fn stash_index_out_of_bounds() -> Self {
+        Self { kind: Box::new(YsErrorKind::StashIndexOutOfBounds) }
+    }
 }
 
 impl Error for YsError {}
@@ -63,7 +73,7 @@ pub enum YsErrorKind {
         /// 错误发生的位置，可能是文件路径或其他资源的标识。
         path: Option<PathBuf>,
     },
-    // 序列化或反序列化错误类型，包含原始的序列化错误信息。
+    /// 序列化或反序列化错误类型，包含原始的序列化错误信息。
     Decode {
         /// 原始序列化错误。
         message: String,
@@ -82,6 +92,10 @@ pub enum YsErrorKind {
     NotImplemented {
         message: String,
     },
+    /// 表示 stash 为空的错误
+    StashEmpty,
+    /// 表示 stash 索引越界的错误
+    StashIndexOutOfBounds,
 }
 
 impl Display for YsErrorKind {
@@ -108,6 +122,12 @@ impl Display for YsErrorKind {
             }
             Self::NotImplemented { message } => {
                 write!(f, "尚未实现: {}", message)
+            }
+            Self::StashEmpty => {
+                write!(f, "stash 为空")
+            }
+            Self::StashIndexOutOfBounds => {
+                write!(f, "stash 索引越界")
             }
         }
     }

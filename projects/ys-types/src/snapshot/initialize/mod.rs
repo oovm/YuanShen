@@ -113,12 +113,18 @@ impl YuanShenClient for DotYuanShenClient {
     fn get_branch_name(&self) -> Result<String, YsError> {
         Ok(read_to_string(&self.dot_root.join("branch"))?)
     }
-    fn set_branch(&self, _new: &str) -> Result<(), YsError> {
-        todo!()
+    fn set_branch(&self, new: &str) -> Result<(), YsError> {
+        let branch_file = self.dot_root.join("branch");
+        let mut file = File::options().create(true).write(true).truncate(true).open(branch_file)?;
+        file.write_all(new.as_bytes())?;
+        Ok(())
     }
 
-    fn create_branch(&self, _name: &str) -> Result<ObjectID, YsError> {
-        todo!()
+    fn create_branch(&self, name: &str) -> Result<ObjectID, YsError> {
+        let current_branch = self.get_branch_name()?;
+        let current_tip = self.get_branch_id(&current_branch)?;
+        self.set_branch_snapshot_id(name, current_tip)?;
+        Ok(current_tip)
     }
 }
 

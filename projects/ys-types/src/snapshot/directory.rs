@@ -76,7 +76,7 @@ impl<'de> Deserialize<'de> for DirectoryObject {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct SubTreeObject {
-    id: ObjectID,
+    pub id: ObjectID,
 }
 
 impl YuanShenObject for SnapShotTree {

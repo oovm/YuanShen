@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::fs::{read_dir, create_dir_all, write};
 use std::path::Path;
 use std::process::Command;
-use ys_types::{DirectoryEntry, ObjectID, YsError, Commit, SnapShotTree};
+use ys_types::{DirectoryEntry, ObjectID, YsError, YsErrorKind, Commit, SnapShotTree};
 use ys_storage::StorageBackend;
 use crate::Driver;
 
@@ -136,7 +136,7 @@ where
 
         if !output.status.success() {
             let error_msg = String::from_utf8_lossy(&output.stderr);
-            return Err(ys_types::YsErrorKind::External {
+            return Err(YsErrorKind::External {
                 message: format!("Perforce 命令执行失败: {}", error_msg),
             }.into());
         }
