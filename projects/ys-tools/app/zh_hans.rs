@@ -2,9 +2,9 @@ use clap::{ArgMatches, Args, Command, FromArgMatches, Parser, Subcommand, builde
 use std::{env::current_dir, fmt::Debug, io::stdout};
 use ys_types::{
     initialize::{DotYuanShenClient, YuanShenClient},
-    IgnoreRules, ObjectID, ObjectProxy, ObjectStore, Commit as YsCommit, SnapShotTree, YsError,
+    IgnoreRules, ObjectID, ObjectProxy, Commit as YsCommit, SnapShotTree, YsError,
 };
-use ys_cli::*;
+use ys_tools::*;
 
 #[derive(Parser, Debug)]
 struct YuanShen {
@@ -25,9 +25,8 @@ enum YsCommand {
     Orphan(YuanShenOrphan),
     Checkout(YuanShenCheckout),
     Branch(YuanShenBranch),
-    Stash(YuanShenCommit),
     GarbageCollect,
-    External(Vec<String>),
+    External,
 }
 
 #[automatically_derived]
@@ -48,15 +47,10 @@ impl FromArgMatches for YsCommand {
                     "reverse" | "回溯" => Self::Reset(FromArgMatches::from_arg_matches_mut(sub_args)?),
                     "checkout" | "跃迁" => Self::Checkout(FromArgMatches::from_arg_matches_mut(sub_args)?),
                     "branch" => Self::Branch(FromArgMatches::from_arg_matches_mut(sub_args)?),
-                    "stash" => Self::Stash(FromArgMatches::from_arg_matches_mut(sub_args)?),
                     "commit" => Self::Commit(FromArgMatches::from_arg_matches_mut(sub_args)?),
                     "changes" => Self::Changes,
                     "garbage-collect" => Self::GarbageCollect,
-                    _ => Self::External(
-                        std::iter::once(String::from(cmd))
-                            .chain(sub_args.remove_many::<String>("").unwrap().map(String::from))
-                            .collect::<Vec<_>>(),
-                    ),
+                    _ => Self::External,
                 };
                 return Ok(ys_cmd);
             }
@@ -127,11 +121,6 @@ impl FromArgMatches for YsCommand {
                     let __clap_arg_matches = &mut __clap_arg_sub_matches;
                     FromArgMatches::update_from_arg_matches_mut(__clap_arg, __clap_arg_matches)?
                 }
-                Self::Stash(ref mut __clap_arg) if "stash" == clap => {
-                    let (_, mut __clap_arg_sub_matches) = args.remove_subcommand().unwrap();
-                    let __clap_arg_matches = &mut __clap_arg_sub_matches;
-                    FromArgMatches::update_from_arg_matches_mut(__clap_arg, __clap_arg_matches)?
-                }
                 Self::GarbageCollect if "garbage-collect" == clap => {
                     let (_, mut __clap_arg_sub_matches) = args.remove_subcommand().unwrap();
                     let __clap_arg_matches = &mut __clap_arg_sub_matches;
@@ -191,7 +180,6 @@ impl Subcommand for YsCommand {
                 .alias("checkout")
         })
         .subcommand(Command::new("branch"))
-        .subcommand(YuanShenCommit::augment_args(Command::new("stash")))
         .subcommand(Command::new("逆化").about("这些对象有点太城市化了").long_about(None).alias("gc").alias("garbage-collect"))
         .external_subcommand_value_parser(ValueParser::new(|s: &str| Ok::<String, std::convert::Infallible>(s.to_string())))
     }
@@ -232,8 +220,7 @@ pub async fn main() -> Result<(), YsError> {
         Rebase(_) => {}
         Reset(_) => {}
         Orphan(_) => {}
-        Stash(_) => {}
-        External(_) => {}
+        External => {}
         GarbageCollect => {}
     }
     Ok(())

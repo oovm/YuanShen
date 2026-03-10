@@ -2,9 +2,9 @@ use clap::{ Parser, Subcommand};
 use std::{env::current_dir, fmt::Debug, io::stdout};
 use ys_types::{
     initialize::{DotYuanShenClient, YuanShenClient},
-    IgnoreRules, ObjectID, ObjectProxy, ObjectStore, Commit as YsCommit, SnapShotTree, YsError, GarbageCollect,
+    IgnoreRules, ObjectID, ObjectProxy, Commit as YsCommit, SnapShotTree, YsError, GarbageCollect,
 };
-use ys_cli::*;
+use ys_tools::*;
 
 #[derive(Parser, Debug)]
 struct YuanShen {
@@ -27,11 +27,10 @@ enum YsCommand {
     Orphan(YuanShenOrphan),
     Checkout(YuanShenCheckout),
     Branch(YuanShenBranch),
-    Stash(YuanShenStash),
     #[command(alias = "gc")]
     GarbageCollect,
     #[command(external_subcommand)]
-    External(Vec<String>),
+    External,
 }
 
 #[tokio::main]
@@ -61,11 +60,10 @@ pub async fn main() -> Result<(), YsError> {
         Rebase(sub) => sub.rebase().await.unwrap(),
         Reset(sub) => sub.reset().await?,
         Orphan(sub) => sub.orphan().await?,
-        Stash(sub) => sub.stash().await?,
-        External(_) => {}
+        External => {}
         GarbageCollect => {
             let dir = current_dir()?;
-            let mut store = ys_storage::LocalDotYuanShen::new(dir.join(".ys")).unwrap();
+            let store = ys_storage::LocalDotYuanShen::new(dir.join(".ys")).unwrap();
             let deleted_count = store.garbage_collect().await?;
             println!("Garbage collection complete. Deleted {} objects.", deleted_count);
         }

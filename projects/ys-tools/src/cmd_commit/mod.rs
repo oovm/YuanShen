@@ -2,7 +2,7 @@ use clap::Args;
 use std::env::current_dir;
 use ys_types::{
     initialize::{DotYuanShenClient, YuanShenClient},
-    IgnoreRules, ObjectID, ObjectProxy, ObjectStore, Commit, SnapShotData, SnapShotTree, YsError,
+    IgnoreRules, ObjectID, ObjectProxy, Commit, SnapShotData, SnapShotTree, YsError,
 };
 
 /// 提交命令参数

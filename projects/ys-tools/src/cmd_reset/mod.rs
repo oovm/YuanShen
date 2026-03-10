@@ -2,7 +2,7 @@ use clap::Args;
 use std::env::current_dir;
 use ys_types::{
     initialize::{DotYuanShenClient, YuanShenClient},
-    IgnoreRules, ObjectID, ObjectProxy, ObjectStore, Commit, SnapShotTree, YsError,
+    ObjectID, ObjectProxy, Commit, SnapShotTree, YsError,
 };
 
 #[derive(Debug, Args)]

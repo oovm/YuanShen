@@ -57,7 +57,7 @@ impl YuanShenRebase {
 
         loop {
             if queue_a.is_empty() && queue_b.is_empty() {
-                return Err(YsError::Other("No common ancestor found".to_string()));
+                return Err(YsError::invalid_object("No common ancestor found"));
             }
 
             if let Some(commit_id) = queue_a.pop() {

@@ -2,7 +2,7 @@ use clap::Args;
 use std::env::current_dir;
 use ys_types::{
     initialize::{DotYuanShenClient, YuanShenClient},
-    ObjectID, ObjectProxy, ObjectStore, Commit, SnapShotTree, YsError,
+    ObjectID, ObjectProxy, Commit, SnapShotTree, YsError,
 };
 
 /// 差异比较命令参数
@@ -25,7 +25,7 @@ impl YuanShenDifference {
         let that_branch = self.branch.as_ref();
         let this_branch: String = dot_rev.get_branch_name()?;
         if !dot_rev.branch_exists(&that_branch)? {
-            return Err(YsError::external_error(format!("no branch named {} exists", that_branch)));
+            return Err(YsError::invalid_object(format!("no branch named {} exists", that_branch)));
         }
         let this_tip: ObjectID = dot_rev.get_branch_id(&this_branch)?;
         let that_tip: ObjectID = dot_rev.get_branch_id(&that_branch)?;
