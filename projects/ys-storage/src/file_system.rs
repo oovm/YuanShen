@@ -1,10 +1,11 @@
-use ys_types::{
-    objects::{ObjectID, TextFile},
-    ObjectProxy, BranchProxy, GarbageCollect,
-    YsError, YuanShenObject, Commit, SnapShotTree, DirectoryEntry, DirectoryObject,
+use std::{
+    collections::{BTreeSet, VecDeque},
+    path::{Path, PathBuf},
 };
-use std::collections::{BTreeSet, VecDeque};
-use std::path::{Path, PathBuf};
+use ys_types::{
+    BranchProxy, Commit, DirectoryEntry, DirectoryObject, GarbageCollect, ObjectProxy, SnapShotTree, YsError, YuanShenObject,
+    objects::{ObjectID, TextFile},
+};
 
 /// 本地文件系统对象储存
 #[derive(Debug, Clone)]
@@ -79,7 +80,7 @@ impl ObjectProxy for LocalDotYuanShen {
 
     async fn get_typed<T>(&self, id: ObjectID) -> Result<T, YsError>
     where
-        T: for<'de> serde::Deserialize<'de> + Send
+        T: for<'de> serde::Deserialize<'de> + Send,
     {
         let path = self.store_file(id);
         let bytes = tokio::fs::read(path).await.map_err(|e| YsError::external_error(e))?;
@@ -88,7 +89,7 @@ impl ObjectProxy for LocalDotYuanShen {
 
     async fn put_typed<T>(&self, obj: &T) -> Result<ObjectID, YsError>
     where
-        T: serde::Serialize + YuanShenObject + Send + Sync
+        T: serde::Serialize + YuanShenObject + Send + Sync,
     {
         let id = obj.object_id();
         let path = self.store_file(id);
@@ -107,20 +108,16 @@ impl BranchProxy for LocalDotYuanShen {
     async fn get_branch_name(&self) -> Result<String, YsError> {
         let branch_file = self.root.join("branch");
         if branch_file.exists() {
-            tokio::fs::read_to_string(branch_file)
-                .await
-                .map(|s| s.trim().to_string())
-                .map_err(|e| YsError::external_error(e))
-        } else {
+            tokio::fs::read_to_string(branch_file).await.map(|s| s.trim().to_string()).map_err(|e| YsError::external_error(e))
+        }
+        else {
             Ok("main".to_string())
         }
     }
 
     async fn set_branch_name(&self, name: &str) -> Result<(), YsError> {
         let branch_file = self.root.join("branch");
-        tokio::fs::write(branch_file, name)
-            .await
-            .map_err(|e| YsError::external_error(e))
+        tokio::fs::write(branch_file, name).await.map_err(|e| YsError::external_error(e))
     }
 
     async fn get_branch_id(&self, name: &str) -> Result<ObjectID, YsError> {
@@ -180,9 +177,11 @@ impl LocalDotYuanShen {
                 for parent in commit.parents {
                     queue.push_back(parent);
                 }
-            } else if let Ok(tree) = self.get_typed::<SnapShotTree>(object_id).await {
+            }
+            else if let Ok(tree) = self.get_typed::<SnapShotTree>(object_id).await {
                 self.collect_tree_entries(&tree.root, &mut reachable, &mut queue).await;
-            } else if let Ok(directory) = self.get_typed::<DirectoryObject>(object_id).await {
+            }
+            else if let Ok(directory) = self.get_typed::<DirectoryObject>(object_id).await {
                 self.collect_tree_entries(&directory.entries, &mut reachable, &mut queue).await;
             }
         }
@@ -282,7 +281,8 @@ impl LocalDotYuanShen {
                 }
             }
             Ok(true)
-        } else {
+        }
+        else {
             Ok(false)
         }
     }

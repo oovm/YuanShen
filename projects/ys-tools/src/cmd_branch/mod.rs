@@ -1,8 +1,8 @@
 use clap::Args;
 use std::env::current_dir;
 use ys_types::{
-    initialize::{DotYuanShenClient, YuanShenClient},
     YsError,
+    initialize::{DotYuanShenClient, YuanShenClient},
 };
 
 /// 分支管理命令
@@ -23,17 +23,18 @@ impl YuanShenBranch {
         let dot_rev = DotYuanShenClient::open(&here)?;
         let current_branch = dot_rev.get_branch_name()?;
         let mut branches = dot_rev.list_branches()?;
-        
+
         branches.sort();
-        
+
         for branch in branches {
             if branch == current_branch {
                 println!("* {}", branch);
-            } else {
+            }
+            else {
                 println!("  {}", branch);
             }
         }
-        
+
         Ok(())
     }
 }

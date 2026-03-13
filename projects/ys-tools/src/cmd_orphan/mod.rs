@@ -1,8 +1,8 @@
 use clap::Args;
 use std::env::current_dir;
 use ys_types::{
+    Commit, IgnoreRules, ObjectProxy, SnapShotTree, YsError,
     initialize::{DotYuanShenClient, YuanShenClient},
-    IgnoreRules, ObjectProxy, Commit, SnapShotTree, YsError,
 };
 
 /// 孤儿分支命令参数
@@ -27,16 +27,12 @@ impl YuanShenOrphan {
         let dot_rev = DotYuanShenClient::open(&dir)?;
         let mut store = ys_storage::LocalDotYuanShen::new(dir.join(".ys"))?;
         let ignores: IgnoreRules = dot_rev.ignores()?;
-        let directory = SnapShotTree::new(dir.as_path(), &ignores, &mut store)?;
+        let directory = SnapShotTree::new(dir.as_path(), &ignores, &mut store).await?;
         let directory_id = store.put_typed(&directory).await?;
         let snap = Commit {
             tree: directory_id,
             parents: Default::default(),
-            extra: ys_types::SnapShotData { 
-                kind: 0, 
-                message: self.message, 
-                tenants: Default::default() 
-            },
+            extra: ys_types::SnapShotData { kind: 0, message: self.message, tenants: Default::default() },
         };
         let snap_id = store.put_typed(&snap).await?;
         dot_rev.set_branch_snapshot_id(&self.branch, snap_id)?;

@@ -1,7 +1,7 @@
+use super::message::{YsMessage, YsMessageType};
 use bytes::{Buf, BufMut, BytesMut};
 use std::io;
 use tokio_util::codec::{Decoder, Encoder};
-use super::message::{YsMessage, YsMessageType};
 
 /// YS 协议魔数
 ///
@@ -43,13 +43,13 @@ impl Decoder for YsProtocolCodec {
     /// * `Err(err)` - 解码出错
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         let header_size = 12;
-        
+
         if src.len() < header_size {
             return Ok(None);
         }
 
         let mut cursor = &src[..];
-        
+
         let magic = cursor.get_u32();
         if magic != YS_MAGIC {
             return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid YS protocol magic"));
@@ -57,18 +57,13 @@ impl Decoder for YsProtocolCodec {
 
         let version = cursor.get_u8();
         if version != YS_PROTOCOL_VERSION {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("Unsupported protocol version: {}", version)
-            ));
+            return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Unsupported protocol version: {}", version)));
         }
 
         let msg_type_byte = cursor.get_u8();
-        let msg_type = YsMessageType::from_u8(msg_type_byte)
-            .ok_or_else(|| io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("Invalid message type: 0x{:02x}", msg_type_byte)
-            ))?;
+        let msg_type = YsMessageType::from_u8(msg_type_byte).ok_or_else(|| {
+            io::Error::new(io::ErrorKind::InvalidData, format!("Invalid message type: 0x{:02x}", msg_type_byte))
+        })?;
 
         let _reserved = cursor.get_u16();
         let payload_len = cursor.get_u32() as usize;
@@ -101,10 +96,10 @@ impl Encoder<YsMessage> for YsProtocolCodec {
     /// * `Err(err)` - 编码出错
     fn encode(&mut self, item: YsMessage, dst: &mut BytesMut) -> Result<(), Self::Error> {
         let msg_type = item.message_type();
-        
+
         let mut payload = BytesMut::new();
         item.encode(&mut payload)?;
-        
+
         let payload_len = payload.len();
         if payload_len > u32::MAX as usize {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "Payload too large"));
@@ -144,15 +139,15 @@ mod tests {
     fn test_encode_decode_handshake_request() {
         let mut codec = YsProtocolCodec::new();
         let mut dst = BytesMut::new();
-        
+
         let message = YsMessage::HandshakeRequest {
             version: 1,
             client_id: "test-client".to_string(),
             capabilities: vec!["batch".to_string(), "compress".to_string()],
         };
-        
+
         codec.encode(message.clone(), &mut dst).unwrap();
-        
+
         let result = codec.decode(&mut dst).unwrap();
         assert_eq!(result, Some(message));
     }
@@ -161,15 +156,15 @@ mod tests {
     fn test_encode_decode_handshake_response() {
         let mut codec = YsProtocolCodec::new();
         let mut dst = BytesMut::new();
-        
+
         let message = YsMessage::HandshakeResponse {
             version: 1,
             server_id: "test-server".to_string(),
             accepted_capabilities: vec!["batch".to_string()],
         };
-        
+
         codec.encode(message.clone(), &mut dst).unwrap();
-        
+
         let result = codec.decode(&mut dst).unwrap();
         assert_eq!(result, Some(message));
     }
@@ -178,12 +173,12 @@ mod tests {
     fn test_encode_decode_get_object_request() {
         let mut codec = YsProtocolCodec::new();
         let mut dst = BytesMut::new();
-        
+
         let object_id = ObjectID::new();
         let message = YsMessage::GetObjectRequest { object_id };
-        
+
         codec.encode(message.clone(), &mut dst).unwrap();
-        
+
         let result = codec.decode(&mut dst).unwrap();
         assert_eq!(result, Some(message));
     }
@@ -192,16 +187,13 @@ mod tests {
     fn test_encode_decode_get_object_response() {
         let mut codec = YsProtocolCodec::new();
         let mut dst = BytesMut::new();
-        
+
         let object_id = ObjectID::new();
-        let message = YsMessage::GetObjectResponse {
-            object_id,
-            object_type: "text".to_string(),
-            data: Bytes::from("test data"),
-        };
-        
+        let message =
+            YsMessage::GetObjectResponse { object_id, object_type: "text".to_string(), data: Bytes::from("test data") };
+
         codec.encode(message.clone(), &mut dst).unwrap();
-        
+
         let result = codec.decode(&mut dst).unwrap();
         assert_eq!(result, Some(message));
     }
@@ -210,16 +202,13 @@ mod tests {
     fn test_encode_decode_put_object_request() {
         let mut codec = YsProtocolCodec::new();
         let mut dst = BytesMut::new();
-        
+
         let object_id = ObjectID::new();
-        let message = YsMessage::PutObjectRequest {
-            object_id,
-            object_type: "binary".to_string(),
-            data: Bytes::from(vec![1, 2, 3, 4]),
-        };
-        
+        let message =
+            YsMessage::PutObjectRequest { object_id, object_type: "binary".to_string(), data: Bytes::from(vec![1, 2, 3, 4]) };
+
         codec.encode(message.clone(), &mut dst).unwrap();
-        
+
         let result = codec.decode(&mut dst).unwrap();
         assert_eq!(result, Some(message));
     }
@@ -228,15 +217,12 @@ mod tests {
     fn test_encode_decode_put_object_response() {
         let mut codec = YsProtocolCodec::new();
         let mut dst = BytesMut::new();
-        
+
         let object_id = ObjectID::new();
-        let message = YsMessage::PutObjectResponse {
-            object_id,
-            success: true,
-        };
-        
+        let message = YsMessage::PutObjectResponse { object_id, success: true };
+
         codec.encode(message.clone(), &mut dst).unwrap();
-        
+
         let result = codec.decode(&mut dst).unwrap();
         assert_eq!(result, Some(message));
     }
@@ -245,12 +231,12 @@ mod tests {
     fn test_encode_decode_batch_get_object_request() {
         let mut codec = YsProtocolCodec::new();
         let mut dst = BytesMut::new();
-        
+
         let object_ids = vec![ObjectID::new(), ObjectID::new(), ObjectID::new()];
         let message = YsMessage::BatchGetObjectRequest { object_ids };
-        
+
         codec.encode(message.clone(), &mut dst).unwrap();
-        
+
         let result = codec.decode(&mut dst).unwrap();
         assert_eq!(result, Some(message));
     }
@@ -259,15 +245,15 @@ mod tests {
     fn test_encode_decode_batch_get_object_response() {
         let mut codec = YsProtocolCodec::new();
         let mut dst = BytesMut::new();
-        
+
         let objects = vec![
             (ObjectID::new(), "text".to_string(), Bytes::from("data1")),
             (ObjectID::new(), "binary".to_string(), Bytes::from("data2")),
         ];
         let message = YsMessage::BatchGetObjectResponse { objects };
-        
+
         codec.encode(message.clone(), &mut dst).unwrap();
-        
+
         let result = codec.decode(&mut dst).unwrap();
         assert_eq!(result, Some(message));
     }
@@ -276,12 +262,12 @@ mod tests {
     fn test_encode_decode_heartbeat() {
         let mut codec = YsProtocolCodec::new();
         let mut dst = BytesMut::new();
-        
+
         let req_message = YsMessage::HeartbeatRequest;
         codec.encode(req_message.clone(), &mut dst).unwrap();
         let req_result = codec.decode(&mut dst).unwrap();
         assert_eq!(req_result, Some(req_message));
-        
+
         let resp_message = YsMessage::HeartbeatResponse;
         codec.encode(resp_message.clone(), &mut dst).unwrap();
         let resp_result = codec.decode(&mut dst).unwrap();
@@ -292,14 +278,11 @@ mod tests {
     fn test_encode_decode_error() {
         let mut codec = YsProtocolCodec::new();
         let mut dst = BytesMut::new();
-        
-        let message = YsMessage::Error {
-            code: 404,
-            message: "Object not found".to_string(),
-        };
-        
+
+        let message = YsMessage::Error { code: 404, message: "Object not found".to_string() };
+
         codec.encode(message.clone(), &mut dst).unwrap();
-        
+
         let result = codec.decode(&mut dst).unwrap();
         assert_eq!(result, Some(message));
     }
@@ -308,16 +291,13 @@ mod tests {
     fn test_encode_decode_list_branches() {
         let mut codec = YsProtocolCodec::new();
         let mut dst = BytesMut::new();
-        
+
         let req_message = YsMessage::ListBranchesRequest;
         codec.encode(req_message.clone(), &mut dst).unwrap();
         let req_result = codec.decode(&mut dst).unwrap();
         assert_eq!(req_result, Some(req_message));
-        
-        let branches = vec![
-            ("main".to_string(), ObjectID::new()),
-            ("dev".to_string(), ObjectID::new()),
-        ];
+
+        let branches = vec![("main".to_string(), ObjectID::new()), ("dev".to_string(), ObjectID::new())];
         let resp_message = YsMessage::ListBranchesResponse { branches };
         codec.encode(resp_message.clone(), &mut dst).unwrap();
         let resp_result = codec.decode(&mut dst).unwrap();
@@ -328,7 +308,7 @@ mod tests {
     fn test_decode_incomplete_header() {
         let mut codec = YsProtocolCodec::new();
         let mut src = BytesMut::from(&[0x59, 0x53, 0x50][..]);
-        
+
         let result = codec.decode(&mut src).unwrap();
         assert_eq!(result, None);
     }
@@ -342,7 +322,7 @@ mod tests {
         src.put_u8(0x01);
         src.put_u16(0);
         src.put_u32(0);
-        
+
         let result = codec.decode(&mut src);
         assert!(result.is_err());
     }
@@ -356,7 +336,7 @@ mod tests {
         src.put_u8(0x01);
         src.put_u16(0);
         src.put_u32(100);
-        
+
         let result = codec.decode(&mut src).unwrap();
         assert_eq!(result, None);
     }

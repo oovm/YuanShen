@@ -1,12 +1,10 @@
-use ys_types::{
-    objects::{ObjectID, TextFile},
-    ObjectProxy, BranchProxy,
-    YsError, YsErrorKind, YuanShenObject,
-};
-use std::path::Path;
 use dashmap::DashMap;
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 use tokio::sync::RwLock;
+use ys_types::{
+    BranchProxy, ObjectProxy, YsError, YsErrorKind, YuanShenObject,
+    objects::{ObjectID, TextFile},
+};
 
 /// [ObjectProxy] in memory, all changes will disappear after the program exits, used for testing.
 #[derive(Clone, Debug)]
@@ -18,7 +16,7 @@ pub struct MemoryObjectPool {
 
 impl Default for MemoryObjectPool {
     fn default() -> Self {
-        Self { 
+        Self {
             objects: Default::default(),
             branches: Default::default(),
             current_branch: Arc::new(RwLock::new("main".to_string())),
@@ -33,9 +31,7 @@ impl ObjectProxy for MemoryObjectPool {
 
     async fn get_string(&self, text: TextFile) -> Result<String, YsError> {
         match self.objects.get(&text.file_id) {
-            Some(o) => {
-                Ok(String::from_utf8_lossy(o.as_slice()).to_string())
-            },
+            Some(o) => Ok(String::from_utf8_lossy(o.as_slice()).to_string()),
             None => Err(YsErrorKind::MissingObject { id: text.file_id })?,
         }
     }

@@ -1,9 +1,8 @@
 use clap::Args;
-use std::collections::BTreeSet;
-use std::env::current_dir;
+use std::{collections::BTreeSet, env::current_dir};
 use ys_types::{
+    Commit, ObjectID, ObjectProxy, SnapShotData, YsError,
     initialize::{DotYuanShenClient, YuanShenClient},
-    ObjectID, ObjectProxy, Commit, SnapShotData, YsError,
 };
 
 /// Squash 命令参数
@@ -19,7 +18,7 @@ pub struct YuanShenSquash {
 
 impl YuanShenSquash {
     /// 执行 Squash 命令，将多个提交合并为一个
-    /// 
+    ///
     /// # 功能说明
     /// - 从当前分支最新提交向前合并指定数量的提交
     /// - 新提交包含所有变更，使用最新提交的 tree

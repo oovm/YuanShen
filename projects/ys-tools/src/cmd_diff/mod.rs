@@ -1,8 +1,8 @@
 use clap::Args;
 use std::env::current_dir;
 use ys_types::{
+    Commit, ObjectID, ObjectProxy, SnapShotTree, YsError,
     initialize::{DotYuanShenClient, YuanShenClient},
-    ObjectID, ObjectProxy, Commit, SnapShotTree, YsError,
 };
 
 /// 差异比较命令参数
@@ -32,8 +32,7 @@ impl YuanShenDifference {
         let that_snapshot: Commit = store.get_typed(that_tip).await?;
         let that_branch_directory = store.get_typed(that_snapshot.tree).await?;
         let this_snapshot: Commit = store.get_typed(this_tip).await?;
-        let this_branch_directory: SnapShotTree =
-            store.get_typed(this_snapshot.tree).await?;
+        let this_branch_directory: SnapShotTree = store.get_typed(this_snapshot.tree).await?;
         let diff = &this_branch_directory.difference(&that_branch_directory);
         println!("{diff}");
         Ok(())

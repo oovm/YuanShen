@@ -1,8 +1,8 @@
 use clap::Args;
 use std::env::current_dir;
 use ys_types::{
+    Commit, ObjectID, ObjectProxy, SnapShotTree, YsError,
     initialize::{DotYuanShenClient, YuanShenClient},
-    ObjectID, ObjectProxy, Commit, SnapShotTree, YsError,
 };
 
 #[derive(Debug, Args)]
@@ -30,23 +30,20 @@ impl YuanShenReset {
         let dir = current_dir()?;
         let dot_rev = DotYuanShenClient::open(&dir)?;
         let store = ys_storage::LocalDotYuanShen::new(dir.join(".ys"))?;
-        
-        let target_commit_id: ObjectID = if dot_rev.branch_exists(&self.target)? {
-            dot_rev.get_branch_id(&self.target)?
-        } else {
-            self.target.parse()?
-        };
-        
+
+        let target_commit_id: ObjectID =
+            if dot_rev.branch_exists(&self.target)? { dot_rev.get_branch_id(&self.target)? } else { self.target.parse()? };
+
         let target_commit: Commit = store.get_typed(target_commit_id).await?;
         let target_tree: SnapShotTree = store.get_typed(target_commit.tree).await?;
-        
+
         if self.hard {
             target_tree.write(&store, &dir).await?;
         }
-        
+
         let current_branch: String = dot_rev.get_branch_name()?;
         dot_rev.set_branch_snapshot_id(&current_branch, target_commit_id)?;
-        
+
         Ok(())
     }
 }

@@ -1,7 +1,10 @@
 use super::*;
-use std::fs::{read_dir, create_dir, create_dir_all};
-use std::io::Write;
-
+use crate::objects::{BranchJson, Commit, SnapShotData, ObjectID};
+use crate::traits::YuanShenObject;
+use std::{
+    fs::{create_dir, create_dir_all, read_dir, File},
+    io::Write,
+};
 
 /// `.ys` 文件夹
 #[derive(Debug)]
@@ -27,19 +30,32 @@ impl InitializeConfig {
         }
         create_dir_all(&root)?;
         self.generate_branches()?;
-        self.generate_configs()?;
+        self.generate_configs().await?;
         // 创建初始提交
-        let _directory = SnapShotTree::default();
-        // let directory = store.put_typed(&directory).await?;
-        // let snapshot = Commit {
-        //     datetime: SystemTime::now(),
-        //     parents: vec![],
-        //     authors: Default::default(),
-        // };
-        // extra: SnapShotData { kind: 0, message: "Project initialized!".to_string(), authors: Default::default() },
-        // let snapshot_id = store.put_typed(&snapshot).await?;
-        // write_json(&snapshot_id, &root.join("branches").join(self.initial_branch.as_ref()))?;
-        // todo!();
+        let directory = SnapShotTree::default();
+        let directory_id = directory.object_id();
+        let directory_path = root.join(&directory_id.to_string()[0..2]).join(&directory_id.to_string()[2..]);
+        if let Some(parent) = directory_path.parent() {
+            create_dir_all(parent)?;
+        }
+        let mut directory_file = File::create(directory_path)?;
+        serde_json::to_writer_pretty(&mut directory_file, &directory)?;
+        
+        let snapshot = Commit {
+            tree: directory_id,
+            parents: Default::default(),
+            extra: SnapShotData { kind: 0, message: "Project initialized!".to_string(), tenants: Default::default() },
+        };
+        let snapshot_id = snapshot.object_id();
+        let snapshot_path = root.join(&snapshot_id.to_string()[0..2]).join(&snapshot_id.to_string()[2..]);
+        if let Some(parent) = snapshot_path.parent() {
+            create_dir_all(parent)?;
+        }
+        let mut snapshot_file = File::create(snapshot_path)?;
+        serde_json::to_writer_pretty(&mut snapshot_file, &snapshot)?;
+        
+        let branch_file = root.join("branches").join(self.initial_branch.as_ref());
+        write_json(&BranchJson { tree_id: snapshot_id.0 }, &branch_file)?;
         Ok(DotYuanShenClient { dot_root: root, _dot_config: config })
     }
     fn generate_branches(&self) -> std::io::Result<()> {
@@ -49,10 +65,13 @@ impl InitializeConfig {
         // Create the default branch
         create_dir(self.join("branches"))
     }
-    fn generate_configs(&self) -> std::io::Result<()> {
+    async fn generate_configs(&self) -> Result<(), YsError> {
         let ignore = self.current.join(".ys.ignore");
         let mut file = File::options().create(true).write(true).open(ignore)?;
         file.write(self.ignores.glob.as_bytes())?;
+        
+        let ignores_in_dot_ys = self.join("ignores");
+        write_json(&self.ignores, &ignores_in_dot_ys)?;
         Ok(())
     }
     fn join(&self, path: &str) -> PathBuf {
@@ -130,7 +149,8 @@ impl YuanShenClient for DotYuanShenClient {
 
 impl DotYuanShenClient {
     pub fn set_branch_snapshot_id(&self, branch: &str, object_id: ObjectID) -> Result<(), YsError> {
-        write_json(&object_id, &self.dot_root.join("branches").join(&branch))
+        let json = BranchJson { tree_id: object_id.0 };
+        write_json(&json, &self.dot_root.join("branches").join(&branch))
     }
 
     /// Checks whether a branch with a given name exists
@@ -142,11 +162,11 @@ impl DotYuanShenClient {
     pub fn list_branches(&self) -> Result<Vec<String>, YsError> {
         let branches_dir = self.dot_root.join("branches");
         let mut branches = Vec::new();
-        
+
         if !branches_dir.exists() {
             return Ok(branches);
         }
-        
+
         for entry in read_dir(branches_dir)? {
             let entry = entry?;
             let path = entry.path();
@@ -156,7 +176,7 @@ impl DotYuanShenClient {
                 }
             }
         }
-        
+
         Ok(branches)
     }
 

@@ -9,9 +9,7 @@ pub struct IgnoreRules {
 
 impl Default for IgnoreRules {
     fn default() -> Self {
-        IgnoreRules {
-            glob: Cow::Borrowed(include_str!(".ys.ignore")),
-        }
+        IgnoreRules { glob: Cow::Borrowed(include_str!(".ys.ignore")) }
     }
 }
 
@@ -30,8 +28,6 @@ impl<'de> Deserialize<'de> for IgnoreRules {
         D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        Ok(IgnoreRules {
-            glob: Cow::Owned(s),
-        })
+        Ok(IgnoreRules { glob: Cow::Owned(s) })
     }
 }

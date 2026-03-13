@@ -1,8 +1,9 @@
-use ys_storage::LimboFsStorage;
-use ys_types::{ObjectProxy, BranchProxy, YuanShenObject};
-use tempfile::tempdir;
+#![cfg(feature = "limbo")]
 
-#[cfg(feature = "limbo")]
+use tempfile::tempdir;
+use ys_storage::LimboFsStorage;
+use ys_types::{BranchProxy, ObjectProxy, YuanShenObject};
+
 #[tokio::test]
 async fn test_limbo_fs_storage() {
     let dir = tempdir().unwrap();

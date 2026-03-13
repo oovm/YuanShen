@@ -1,6 +1,6 @@
 use crate::{
-    objects::{ObjectID, TextFile},
     YsError,
+    objects::{ObjectID, TextFile},
 };
 use std::path::Path;
 

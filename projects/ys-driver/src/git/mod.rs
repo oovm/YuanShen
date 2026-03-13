@@ -1,9 +1,11 @@
-use std::collections::BTreeMap;
-use std::fs::{read_dir, create_dir_all, write};
-use std::path::Path;
-use ys_types::{DirectoryEntry, ObjectID, YsError, Commit, SnapShotTree};
-use ys_storage::StorageBackend;
 use crate::Driver;
+use std::{
+    collections::BTreeMap,
+    fs::{create_dir_all, read_dir, write},
+    path::Path,
+};
+use ys_storage::StorageBackend;
+use ys_types::{Commit, DirectoryEntry, ObjectID, SnapShotTree, YsError};
 
 /// Git 版本控制系统驱动程序，用于与 Git 仓库交互
 pub struct GitDriver<S> {
@@ -33,18 +35,12 @@ where
     ///
     /// # 返回值
     /// 操作成功返回 Ok(())，失败返回 YsError
-    fn import_directory_sync(
-        &self,
-        dir_path: &Path,
-        entries: &mut BTreeMap<String, DirectoryEntry>,
-    ) -> Result<(), YsError> {
+    fn import_directory_sync(&self, dir_path: &Path, entries: &mut BTreeMap<String, DirectoryEntry>) -> Result<(), YsError> {
         let dir = read_dir(dir_path)?;
         for entry in dir {
             let entry = entry?;
             let path = entry.path();
-            let file_name = entry.file_name().into_string().map_err(|_| {
-                YsError::invalid_object("文件名包含无效字符")
-            })?;
+            let file_name = entry.file_name().into_string().map_err(|_| YsError::invalid_object("文件名包含无效字符"))?;
 
             if file_name == ".git" {
                 continue;
@@ -53,20 +49,13 @@ where
             if path.is_dir() {
                 let mut child_entries = BTreeMap::new();
                 self.import_directory_sync(&path, &mut child_entries)?;
-                let dir_obj = ys_types::DirectoryObject {
-                    entries: child_entries,
-                };
-                entries.insert(
-                    file_name,
-                    DirectoryEntry::Directory(dir_obj),
-                );
-            } else if path.is_file() {
+                let dir_obj = ys_types::DirectoryObject { entries: child_entries };
+                entries.insert(file_name, DirectoryEntry::Directory(dir_obj));
+            }
+            else if path.is_file() {
                 let rt = tokio::runtime::Runtime::new()?;
                 let text_file = rt.block_on(self.store.put_string_file(&path))?;
-                entries.insert(
-                    file_name,
-                    DirectoryEntry::TextStandalone(text_file),
-                );
+                entries.insert(file_name, DirectoryEntry::TextStandalone(text_file));
             }
         }
         Ok(())
@@ -189,8 +178,7 @@ where
         self.export_directory(&tree.root, temp_path).await?;
 
         let mut index = repo.index().map_err(YsError::external_error)?;
-        index.add_all(["*"].iter(), git2::IndexAddOption::DEFAULT, None)
-            .map_err(YsError::external_error)?;
+        index.add_all(["*"].iter(), git2::IndexAddOption::DEFAULT, None).map_err(YsError::external_error)?;
         index.write().map_err(YsError::external_error)?;
 
         let tree_oid = index.write_tree().map_err(YsError::external_error)?;
@@ -199,28 +187,16 @@ where
         let head = repo.head().map_err(YsError::external_error)?;
         let parent_commit = head.peel_to_commit().map_err(YsError::external_error)?;
 
-        let signature = git2::Signature::now("GitDriver", "gitdriver@example.com")
-            .map_err(YsError::external_error)?;
+        let signature = git2::Signature::now("GitDriver", "gitdriver@example.com").map_err(YsError::external_error)?;
 
         let message = &commit.extra.message;
 
-        repo.commit(
-            Some("HEAD"),
-            &signature,
-            &signature,
-            message,
-            &tree,
-            &[&parent_commit],
-        )
-        .map_err(YsError::external_error)?;
+        repo.commit(Some("HEAD"), &signature, &signature, message, &tree, &[&parent_commit])
+            .map_err(YsError::external_error)?;
 
         let mut remote = repo.find_remote("origin").map_err(YsError::external_error)?;
         let mut push_options = git2::PushOptions::new();
-        remote.push(
-            &["refs/heads/main:refs/heads/main"],
-            Some(&mut push_options),
-        )
-        .map_err(YsError::external_error)?;
+        remote.push(&["refs/heads/main:refs/heads/main"], Some(&mut push_options)).map_err(YsError::external_error)?;
 
         Ok(())
     }

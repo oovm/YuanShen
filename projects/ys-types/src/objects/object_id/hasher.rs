@@ -1,6 +1,8 @@
 use super::*;
-use std::fmt::{Debug, Formatter};
-use std::hash::{Hash, Hasher};
+use std::{
+    fmt::{Debug, Formatter},
+    hash::{Hash, Hasher},
+};
 use uuid::Uuid;
 
 #[derive(Default)]

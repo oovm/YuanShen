@@ -1,9 +1,10 @@
+use crate::{
+    objects::{ObjectID, tenant_id::TenantID},
+    traits::YuanShenObject,
+    utils::hash_json,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
-use crate::objects::tenant_id::TenantID;
-use crate::objects::ObjectID;
-use crate::traits::YuanShenObject;
-use crate::utils::hash_json;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SnapShotData {
@@ -25,4 +26,3 @@ impl YuanShenObject for Commit {
         hash_json(self).unwrap().into()
     }
 }
-

@@ -1,10 +1,11 @@
-use ys_types::{
-    objects::{ObjectID, TextFile},
-    ObjectProxy, BranchProxy,
-    YsError, YuanShenObject,
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
 };
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use ys_types::{
+    BranchProxy, ObjectProxy, YsError, YuanShenObject,
+    objects::{ObjectID, TextFile},
+};
 
 /// Limbo + FS 存储方案
 /// 使用 Limbo (SQLite) 存储元数据，FS 存储大文件对象
@@ -18,13 +19,10 @@ impl LimboFsStorage {
         if !root.exists() {
             tokio::fs::create_dir_all(&root).await.map_err(|e| YsError::external_error(e))?;
         }
-        
+
         let db_path = root.join("metadata.db");
-        let db = limbo::Builder::new_local(db_path.to_str().unwrap())
-            .build()
-            .await
-            .map_err(|e| YsError::external_error(e))?;
-        
+        let db = limbo::Builder::new_local(db_path.to_str().unwrap()).build().await.map_err(|e| YsError::external_error(e))?;
+
         let conn = db.connect().map_err(|e| YsError::external_error(e))?;
         // 初始化表
         conn.execute("CREATE TABLE IF NOT EXISTS branches (name TEXT, id BLOB)", ())
@@ -34,10 +32,7 @@ impl LimboFsStorage {
             .await
             .map_err(|e| YsError::external_error(e))?;
 
-        Ok(Self {
-            root,
-            db: Arc::new(db),
-        })
+        Ok(Self { root, db: Arc::new(db) })
     }
 
     fn store_file(&self, id: ObjectID) -> PathBuf {
@@ -84,27 +79,17 @@ impl ObjectProxy for LimboFsStorage {
     async fn get_buffer(&self, file: TextFile) -> Result<Vec<u8>, YsError> {
         let path = self.store_file(file.file_id);
         if !path.exists() {
-            return Err(YsError::invalid_object(format!(
-                "Object not found: {}",
-                file.file_id
-            )));
+            return Err(YsError::invalid_object(format!("Object not found: {}", file.file_id)));
         }
-        tokio::fs::read(path)
-            .await
-            .map_err(|e| YsError::external_error(e))
+        tokio::fs::read(path).await.map_err(|e| YsError::external_error(e))
     }
 
     async fn get_buffer_file(&self, file: TextFile, path: &Path) -> Result<(), YsError> {
         let src_path = self.store_file(file.file_id);
         if !src_path.exists() {
-            return Err(YsError::invalid_object(format!(
-                "Object not found: {}",
-                file.file_id
-            )));
+            return Err(YsError::invalid_object(format!("Object not found: {}", file.file_id)));
         }
-        tokio::fs::copy(src_path, path)
-            .await
-            .map_err(|e| YsError::external_error(e))?;
+        tokio::fs::copy(src_path, path).await.map_err(|e| YsError::external_error(e))?;
         Ok(())
     }
 
@@ -113,29 +98,21 @@ impl ObjectProxy for LimboFsStorage {
         let path = self.store_file(id);
         if !path.exists() {
             if let Some(parent) = path.parent() {
-                tokio::fs::create_dir_all(parent)
-                    .await
-                    .map_err(|e| YsError::external_error(e))?;
+                tokio::fs::create_dir_all(parent).await.map_err(|e| YsError::external_error(e))?;
             }
-            tokio::fs::write(path, buf)
-                .await
-                .map_err(|e| YsError::external_error(e))?;
+            tokio::fs::write(path, buf).await.map_err(|e| YsError::external_error(e))?;
         }
-        Ok(TextFile {
-            file_id: id,
-        })
+        Ok(TextFile { file_id: id })
     }
 
     async fn put_buffer_file(&self, path: &Path) -> Result<TextFile, YsError> {
-        let buf = tokio::fs::read(path)
-            .await
-            .map_err(|e| YsError::external_error(e))?;
+        let buf = tokio::fs::read(path).await.map_err(|e| YsError::external_error(e))?;
         self.put_buffer(&buf).await
     }
 
     async fn get_typed<T>(&self, id: ObjectID) -> Result<T, YsError>
     where
-        T: for<'de> serde::Deserialize<'de> + Send
+        T: for<'de> serde::Deserialize<'de> + Send,
     {
         let path = self.store_file(id);
         let bytes = tokio::fs::read(path).await.map_err(|e| YsError::external_error(e))?;
@@ -144,7 +121,7 @@ impl ObjectProxy for LimboFsStorage {
 
     async fn put_typed<T>(&self, obj: &T) -> Result<ObjectID, YsError>
     where
-        T: serde::Serialize + YuanShenObject + Send + Sync
+        T: serde::Serialize + YuanShenObject + Send + Sync,
     {
         let id = obj.object_id();
         let path = self.store_file(id);
@@ -177,24 +154,17 @@ impl BranchProxy for LimboFsStorage {
 
     async fn set_branch_name(&self, name: &str) -> Result<(), YsError> {
         let conn = self.db.connect().map_err(|e| YsError::external_error(e))?;
-        conn.execute("DELETE FROM config WHERE key = 'current_branch'", ())
+        conn.execute("DELETE FROM config WHERE key = 'current_branch'", ()).await.map_err(|e| YsError::external_error(e))?;
+        conn.execute("INSERT INTO config (key, value) VALUES ('current_branch', ?1)", [name])
             .await
             .map_err(|e| YsError::external_error(e))?;
-        conn.execute(
-            "INSERT INTO config (key, value) VALUES ('current_branch', ?1)",
-            [name],
-        )
-        .await
-        .map_err(|e| YsError::external_error(e))?;
         Ok(())
     }
 
     async fn get_branch_id(&self, name: &str) -> Result<ObjectID, YsError> {
         let conn = self.db.connect().map_err(|e| YsError::external_error(e))?;
-        let mut rows = conn
-            .query("SELECT id FROM branches WHERE name = ?1", [name])
-            .await
-            .map_err(|e| YsError::external_error(e))?;
+        let mut rows =
+            conn.query("SELECT id FROM branches WHERE name = ?1", [name]).await.map_err(|e| YsError::external_error(e))?;
         if let Some(row) = rows.next().await.map_err(|e| YsError::external_error(e))? {
             let val = row.get_value(0).map_err(|e| YsError::external_error(e))?;
             if let limbo::Value::Blob(bytes) = val {
@@ -206,37 +176,23 @@ impl BranchProxy for LimboFsStorage {
 
     async fn set_branch_id(&self, name: &str, id: ObjectID) -> Result<(), YsError> {
         let conn = self.db.connect().map_err(|e| YsError::external_error(e))?;
-        conn.execute("DELETE FROM branches WHERE name = ?1", [name])
+        conn.execute("DELETE FROM branches WHERE name = ?1", [name]).await.map_err(|e| YsError::external_error(e))?;
+        conn.execute("INSERT INTO branches (name, id) VALUES (?1, ?2)", (name, id.as_bytes().to_vec()))
             .await
             .map_err(|e| YsError::external_error(e))?;
-        conn.execute(
-            "INSERT INTO branches (name, id) VALUES (?1, ?2)",
-            (name, id.as_bytes().to_vec()),
-        )
-        .await
-        .map_err(|e| YsError::external_error(e))?;
         Ok(())
     }
 
     async fn branch_exists(&self, name: &str) -> Result<bool, YsError> {
         let conn = self.db.connect().map_err(|e| YsError::external_error(e))?;
-        let mut rows = conn
-            .query("SELECT 1 FROM branches WHERE name = ?1", [name])
-            .await
-            .map_err(|e| YsError::external_error(e))?;
-        Ok(rows
-            .next()
-            .await
-            .map_err(|e| YsError::external_error(e))?
-            .is_some())
+        let mut rows =
+            conn.query("SELECT 1 FROM branches WHERE name = ?1", [name]).await.map_err(|e| YsError::external_error(e))?;
+        Ok(rows.next().await.map_err(|e| YsError::external_error(e))?.is_some())
     }
 
     async fn list_branches(&self) -> Result<Vec<(String, ObjectID)>, YsError> {
         let conn = self.db.connect().map_err(|e| YsError::external_error(e))?;
-        let mut rows = conn
-            .query("SELECT name, id FROM branches", ())
-            .await
-            .map_err(|e| YsError::external_error(e))?;
+        let mut rows = conn.query("SELECT name, id FROM branches", ()).await.map_err(|e| YsError::external_error(e))?;
         let mut branches = Vec::new();
         while let Some(row) = rows.next().await.map_err(|e| YsError::external_error(e))? {
             let name_val = row.get_value(0).map_err(|e| YsError::external_error(e))?;
@@ -250,4 +206,3 @@ impl BranchProxy for LimboFsStorage {
         Ok(branches)
     }
 }
-

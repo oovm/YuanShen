@@ -137,133 +137,90 @@ pub enum YsMessage {
     /// * `version` - 协议版本
     /// * `client_id` - 客户端标识符
     /// * `capabilities` - 客户端支持的能力列表
-    HandshakeRequest {
-        version: u32,
-        client_id: String,
-        capabilities: Vec<String>,
-    },
+    HandshakeRequest { version: u32, client_id: String, capabilities: Vec<String> },
     /// 握手响应
     ///
     /// # Fields
     /// * `version` - 协议版本
     /// * `server_id` - 服务器标识符
     /// * `accepted_capabilities` - 服务器接受的能力列表
-    HandshakeResponse {
-        version: u32,
-        server_id: String,
-        accepted_capabilities: Vec<String>,
-    },
+    HandshakeResponse { version: u32, server_id: String, accepted_capabilities: Vec<String> },
     /// 获取对象请求
     ///
     /// # Fields
     /// * `object_id` - 要获取的对象 ID
-    GetObjectRequest {
-        object_id: ObjectID,
-    },
+    GetObjectRequest { object_id: ObjectID },
     /// 获取对象响应
     ///
     /// # Fields
     /// * `object_id` - 对象 ID
     /// * `object_type` - 对象类型
     /// * `data` - 对象数据
-    GetObjectResponse {
-        object_id: ObjectID,
-        object_type: String,
-        data: Bytes,
-    },
+    GetObjectResponse { object_id: ObjectID, object_type: String, data: Bytes },
     /// 上传对象请求
     ///
     /// # Fields
     /// * `object_id` - 对象 ID
     /// * `object_type` - 对象类型
     /// * `data` - 对象数据
-    PutObjectRequest {
-        object_id: ObjectID,
-        object_type: String,
-        data: Bytes,
-    },
+    PutObjectRequest { object_id: ObjectID, object_type: String, data: Bytes },
     /// 上传对象响应
     ///
     /// # Fields
     /// * `object_id` - 对象 ID
     /// * `success` - 是否成功
-    PutObjectResponse {
-        object_id: ObjectID,
-        success: bool,
-    },
+    PutObjectResponse { object_id: ObjectID, success: bool },
     /// 批量获取对象请求
     ///
     /// # Fields
     /// * `object_ids` - 要获取的对象 ID 列表
-    BatchGetObjectRequest {
-        object_ids: Vec<ObjectID>,
-    },
+    BatchGetObjectRequest { object_ids: Vec<ObjectID> },
     /// 批量获取对象响应
     ///
     /// # Fields
     /// * `objects` - 对象列表，每个元素包含 (object_id, object_type, data)
-    BatchGetObjectResponse {
-        objects: Vec<(ObjectID, String, Bytes)>,
-    },
+    BatchGetObjectResponse { objects: Vec<(ObjectID, String, Bytes)> },
     /// 获取提交历史请求
     ///
     /// # Fields
     /// * `branch_name` - 分支名称
     /// * `limit` - 最大返回数量
-    GetCommitHistoryRequest {
-        branch_name: String,
-        limit: u32,
-    },
+    GetCommitHistoryRequest { branch_name: String, limit: u32 },
     /// 获取提交历史响应
     ///
     /// # Fields
     /// * `commits` - 提交历史列表
-    GetCommitHistoryResponse {
-        commits: Vec<Bytes>,
-    },
+    GetCommitHistoryResponse { commits: Vec<Bytes> },
     /// 创建分支请求
     ///
     /// # Fields
     /// * `branch_name` - 分支名称
     /// * `commit_id` - 起始提交 ID
-    CreateBranchRequest {
-        branch_name: String,
-        commit_id: ObjectID,
-    },
+    CreateBranchRequest { branch_name: String, commit_id: ObjectID },
     /// 创建分支响应
     ///
     /// # Fields
     /// * `branch_name` - 分支名称
     /// * `success` - 是否成功
-    CreateBranchResponse {
-        branch_name: String,
-        success: bool,
-    },
+    CreateBranchResponse { branch_name: String, success: bool },
     /// 删除分支请求
     ///
     /// # Fields
     /// * `branch_name` - 分支名称
-    DeleteBranchRequest {
-        branch_name: String,
-    },
+    DeleteBranchRequest { branch_name: String },
     /// 删除分支响应
     ///
     /// # Fields
     /// * `branch_name` - 分支名称
     /// * `success` - 是否成功
-    DeleteBranchResponse {
-        branch_name: String,
-        success: bool,
-    },
+    DeleteBranchResponse { branch_name: String, success: bool },
     /// 列出分支请求
     ListBranchesRequest,
     /// 列出分支响应
     ///
     /// # Fields
     /// * `branches` - 分支列表，每个元素包含 (branch_name, commit_id)
-    ListBranchesResponse {
-        branches: Vec<(String, ObjectID)>,
-    },
+    ListBranchesResponse { branches: Vec<(String, ObjectID)> },
     /// 心跳请求
     HeartbeatRequest,
     /// 心跳响应
@@ -273,10 +230,7 @@ pub enum YsMessage {
     /// # Fields
     /// * `code` - 错误代码
     /// * `message` - 错误消息
-    Error {
-        code: u32,
-        message: String,
-    },
+    Error { code: u32, message: String },
 }
 
 impl YsMessage {
@@ -482,9 +436,7 @@ impl YsMessage {
                 let success = src.get_u8() != 0;
                 Ok(YsMessage::DeleteBranchResponse { branch_name, success })
             }
-            YsMessageType::ListBranchesRequest => {
-                Ok(YsMessage::ListBranchesRequest)
-            }
+            YsMessageType::ListBranchesRequest => Ok(YsMessage::ListBranchesRequest),
             YsMessageType::ListBranchesResponse => {
                 let count = src.get_u32() as usize;
                 let mut branches = Vec::with_capacity(count);
@@ -495,12 +447,8 @@ impl YsMessage {
                 }
                 Ok(YsMessage::ListBranchesResponse { branches })
             }
-            YsMessageType::HeartbeatRequest => {
-                Ok(YsMessage::HeartbeatRequest)
-            }
-            YsMessageType::HeartbeatResponse => {
-                Ok(YsMessage::HeartbeatResponse)
-            }
+            YsMessageType::HeartbeatRequest => Ok(YsMessage::HeartbeatRequest),
+            YsMessageType::HeartbeatResponse => Ok(YsMessage::HeartbeatResponse),
             YsMessageType::Error => {
                 let code = src.get_u32();
                 let message = decode_string(src)?;
@@ -528,8 +476,7 @@ fn decode_string(src: &mut impl Buf) -> io::Result<String> {
         return Err(io::Error::new(io::ErrorKind::InvalidData, "Incomplete string data"));
     }
     let bytes = src.copy_to_bytes(len);
-    String::from_utf8(bytes.to_vec())
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+    String::from_utf8(bytes.to_vec()).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
 /// 编码字符串列表
@@ -586,8 +533,7 @@ fn decode_object_id(src: &mut impl Buf) -> io::Result<ObjectID> {
     }
     let mut bytes = [0u8; 16];
     src.copy_to_slice(&mut bytes);
-    ObjectID::from_bytes(&bytes)
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))
+    ObjectID::from_bytes(&bytes).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))
 }
 
 /// 编码 ObjectID 列表

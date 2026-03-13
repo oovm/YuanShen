@@ -24,6 +24,7 @@ dashmap = { workspace = true }
 tokio-test = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 tempfile = { workspace = true }
+ys-storage = { workspace = true }
 
 [features]
 default = []

@@ -15,12 +15,16 @@ const DOT_YUAN_SHEN: &'static str = ".ys";
 
 pub use crate::{
     errors::{Result, YsError, YsErrorKind},
+    objects::{
+        IgnoreRules, ObjectID, TextFile,
+        commit_id::{Commit, SnapShotData},
+    },
     snapshot::{
         differences,
+        differences::{DifferenceEntry, SnapShotDifference},
         directory::{DirectoryEntry, DirectoryObject, SnapShotTree},
         initialize,
     },
-    objects::{ObjectID, IgnoreRules, commit_id::{Commit, SnapShotData}},
-    traits::{BranchProxy, ObjectProxy, ObjectStore, GarbageCollect, YuanShenID, YuanShenObject},
+    traits::{BranchProxy, GarbageCollect, ObjectProxy, ObjectStore, YuanShenID, YuanShenObject},
     utils::async_test,
 };

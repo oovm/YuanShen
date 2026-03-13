@@ -207,20 +207,14 @@ where
         for (name, _id) in &branches {
             let entry = SvnItem::List(vec![
                 SvnItem::String(name.as_bytes().to_vec()),
-                SvnItem::List(vec![
-                    SvnItem::String(b"kind".to_vec()),
-                    SvnItem::String(b"file".to_vec()),
-                ]),
+                SvnItem::List(vec![SvnItem::String(b"kind".to_vec()), SvnItem::String(b"file".to_vec())]),
             ]);
             dir_entries.push(entry);
         }
 
         let latest_rev = if branches.is_empty() { 1 } else { branches.len() as i64 };
-        let response = SvnItem::List(vec![
-            SvnItem::String(b"success".to_vec()),
-            SvnItem::List(dir_entries),
-            SvnItem::Number(latest_rev),
-        ]);
+        let response =
+            SvnItem::List(vec![SvnItem::String(b"success".to_vec()), SvnItem::List(dir_entries), SvnItem::Number(latest_rev)]);
         Self::write_item(stream, &response).await?;
         stream.flush().await.map_err(YsError::external_error)?;
         Ok(())

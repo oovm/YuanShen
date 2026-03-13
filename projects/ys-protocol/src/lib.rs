@@ -10,5 +10,4 @@ pub use git::{PktLine, PktLineCodec};
 pub use ys::{YsMessage, YsMessageType, YsProtocolCodec};
 
 /// YS 原生二进制协议定义
-pub trait YsProtocol: Send + Sync {
-}
+pub trait YsProtocol: Send + Sync {}

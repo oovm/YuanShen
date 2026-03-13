@@ -1,12 +1,14 @@
-use crate::utils::{read_json, write_json};
-use crate::errors::YsError;
-use uuid::Uuid;
+use crate::{
+    errors::YsError,
+    utils::{read_json, write_json},
+};
+use serde::{Deserialize, Serialize};
 use std::{
-    fmt::{Display, Debug},
+    fmt::{Debug, Display},
     io,
     path::Path,
 };
-use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 mod convert;
 mod hasher;
@@ -38,7 +40,8 @@ impl ObjectID {
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, YsError> {
-        let uuid = Uuid::from_slice(bytes).map_err(|e| YsError::external_error(io::Error::new(io::ErrorKind::InvalidData, e.to_string())))?;
+        let uuid = Uuid::from_slice(bytes)
+            .map_err(|e| YsError::external_error(io::Error::new(io::ErrorKind::InvalidData, e.to_string())))?;
         Ok(ObjectID(uuid))
     }
 

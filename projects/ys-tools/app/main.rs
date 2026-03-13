@@ -1,10 +1,10 @@
-use clap::{ Parser, Subcommand};
+use clap::{Parser, Subcommand};
 use std::{env::current_dir, fmt::Debug, io::stdout};
-use ys_types::{
-    initialize::{DotYuanShenClient, YuanShenClient},
-    IgnoreRules, ObjectID, ObjectProxy, Commit as YsCommit, SnapShotTree, YsError, GarbageCollect,
-};
 use ys_tools::*;
+use ys_types::{
+    Commit as YsCommit, GarbageCollect, IgnoreRules, ObjectID, ObjectProxy, SnapShotTree, YsError,
+    initialize::{DotYuanShenClient, YuanShenClient},
+};
 
 #[derive(Parser, Debug)]
 struct YuanShen {
@@ -50,7 +50,7 @@ pub async fn main() -> Result<(), YsError> {
             let branch: String = dot_rev.get_branch_name().unwrap();
             let old_tip: ObjectID = dot_rev.get_branch_id(&branch).unwrap();
             let ignores: IgnoreRules = dot_rev.ignores().unwrap();
-            let directory = SnapShotTree::new(dir.as_path(), &ignores, &mut store).unwrap();
+            let directory = futures::executor::block_on(SnapShotTree::new(dir.as_path(), &ignores, &mut store)).unwrap();
             let snapshot: YsCommit = store.get_typed(old_tip).await.unwrap();
             let old_directory: SnapShotTree = store.get_typed(snapshot.tree).await.unwrap();
             serde_json::to_writer_pretty(stdout(), &old_directory.difference(&directory)).unwrap();

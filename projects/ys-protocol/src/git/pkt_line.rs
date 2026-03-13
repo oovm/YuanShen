@@ -1,6 +1,6 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use tokio_util::codec::{Decoder, Encoder};
 use std::io;
+use tokio_util::codec::{Decoder, Encoder};
 
 /// Git pkt-line 协议包类型
 ///
@@ -52,7 +52,7 @@ impl Decoder for PktLineCodec {
 
         let len_str = std::str::from_utf8(&src[..4])
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid pkt-line length encoding"))?;
-        
+
         let len = usize::from_str_radix(len_str, 16)
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid pkt-line length hex"))?;
 

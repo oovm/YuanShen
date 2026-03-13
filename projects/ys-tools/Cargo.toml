@@ -25,6 +25,7 @@ tokio = { workspace = true, features = ["full"] }
 serde_json = { workspace = true }
 ys-types = { workspace = true }
 ys-storage = { workspace = true }
+futures = { workspace = true }
 
 
 

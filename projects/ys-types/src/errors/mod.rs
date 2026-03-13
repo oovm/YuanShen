@@ -1,12 +1,12 @@
+use crate::objects::ObjectID;
+use blake3::HexError;
 use std::{
     convert::Infallible,
     error::Error,
     fmt::{Debug, Display, Formatter},
+    path::PathBuf,
+    string::FromUtf8Error,
 };
-use blake3::HexError;
-use std::path::PathBuf;
-use std::string::FromUtf8Error;
-use crate::objects::ObjectID;
 
 /// 便捷 Result 类型, 可以少写一个 [YsError]
 pub type Result<T> = std::result::Result<T, YsError>;
@@ -104,7 +104,8 @@ impl Display for YsErrorKind {
             Self::IO { error, path } => {
                 if let Some(path) = path {
                     write!(f, "IO 错误 at {:?}: {}", path, error)
-                } else {
+                }
+                else {
                     write!(f, "IO 错误: {}", error)
                 }
             }

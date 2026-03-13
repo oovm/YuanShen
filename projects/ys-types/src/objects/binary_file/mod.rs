@@ -6,7 +6,7 @@ pub struct BinaryFile {
     pub buffer_id: ObjectID,
 }
 
-#[derive( Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct BinaryIncremental {
     pub reference: ObjectID,
     pub edits: Vec<ObjectID>,

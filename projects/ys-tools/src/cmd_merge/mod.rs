@@ -1,9 +1,8 @@
 use clap::Args;
-use std::collections::BTreeSet;
-use std::env::current_dir;
+use std::{collections::BTreeSet, env::current_dir};
 use ys_types::{
+    Commit, ObjectID, ObjectProxy, SnapShotData, YsError,
     initialize::{DotYuanShenClient, YuanShenClient},
-    ObjectID, ObjectProxy, Commit, SnapShotData, YsError,
 };
 
 /// Merge 命令参数
@@ -19,7 +18,7 @@ pub struct YuanShenMerge {
 
 impl YuanShenMerge {
     /// 执行 Merge 命令，合并另一个分支到当前分支
-    /// 
+    ///
     /// # 功能说明
     /// - 检查是否可以 fast-forward（当前分支是要合并分支的祖先）
     /// - 如果可以 fast-forward，直接移动当前分支指针到要合并分支的最新提交
@@ -35,18 +34,19 @@ impl YuanShenMerge {
 
         if self.is_fast_forward(&store, current_tip, other_tip).await {
             dot_rev.set_branch_snapshot_id(&current_branch, other_tip)
-        } else {
+        }
+        else {
             self.create_merge_commit(&dot_rev, &store, &current_branch, current_tip, other_tip).await
         }
     }
 
     /// 检查是否可以 fast-forward 合并
-    /// 
+    ///
     /// # 参数
     /// - store: 对象存储
     /// - current_tip: 当前分支的最新提交 ID
     /// - other_tip: 要合并分支的最新提交 ID
-    /// 
+    ///
     /// # 返回
     /// - 如果可以 fast-forward，返回 true；否则返回 false
     async fn is_fast_forward(&self, store: &ys_storage::LocalDotYuanShen, current_tip: ObjectID, other_tip: ObjectID) -> bool {
@@ -76,7 +76,7 @@ impl YuanShenMerge {
     }
 
     /// 创建合并提交
-    /// 
+    ///
     /// # 参数
     /// - dot_rev: YuanShen 客户端
     /// - store: 对象存储

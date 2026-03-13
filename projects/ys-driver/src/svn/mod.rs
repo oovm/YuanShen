@@ -1,10 +1,12 @@
-use std::collections::BTreeMap;
-use std::fs::{read_dir, create_dir_all, write};
-use std::path::Path;
-use std::process::Command;
-use ys_types::{DirectoryEntry, ObjectID, YsError, Commit, SnapShotTree};
-use ys_storage::StorageBackend;
 use crate::Driver;
+use std::{
+    collections::BTreeMap,
+    fs::{create_dir_all, read_dir, write},
+    path::Path,
+    process::Command,
+};
+use ys_storage::StorageBackend;
+use ys_types::{Commit, DirectoryEntry, ObjectID, SnapShotTree, YsError};
 
 /// SVN 版本控制系统驱动程序，用于与 SVN 仓库交互
 pub struct SvnDriver<S> {
@@ -34,18 +36,12 @@ where
     ///
     /// # 返回值
     /// 操作成功返回 Ok(())，失败返回 YsError
-    fn import_directory_sync(
-        &self,
-        dir_path: &Path,
-        entries: &mut BTreeMap<String, DirectoryEntry>,
-    ) -> Result<(), YsError> {
+    fn import_directory_sync(&self, dir_path: &Path, entries: &mut BTreeMap<String, DirectoryEntry>) -> Result<(), YsError> {
         let dir = read_dir(dir_path)?;
         for entry in dir {
             let entry = entry?;
             let path = entry.path();
-            let file_name = entry.file_name().into_string().map_err(|_| {
-                YsError::invalid_object("文件名包含无效字符")
-            })?;
+            let file_name = entry.file_name().into_string().map_err(|_| YsError::invalid_object("文件名包含无效字符"))?;
 
             if file_name == ".svn" {
                 continue;
@@ -54,20 +50,13 @@ where
             if path.is_dir() {
                 let mut child_entries = BTreeMap::new();
                 self.import_directory_sync(&path, &mut child_entries)?;
-                let dir_obj = ys_types::DirectoryObject {
-                    entries: child_entries,
-                };
-                entries.insert(
-                    file_name,
-                    DirectoryEntry::Directory(dir_obj),
-                );
-            } else if path.is_file() {
+                let dir_obj = ys_types::DirectoryObject { entries: child_entries };
+                entries.insert(file_name, DirectoryEntry::Directory(dir_obj));
+            }
+            else if path.is_file() {
                 let rt = tokio::runtime::Runtime::new()?;
                 let text_file = rt.block_on(self.store.put_string_file(&path))?;
-                entries.insert(
-                    file_name,
-                    DirectoryEntry::TextStandalone(text_file),
-                );
+                entries.insert(file_name, DirectoryEntry::TextStandalone(text_file));
             }
         }
         Ok(())
@@ -121,10 +110,7 @@ where
     ///
     /// # 返回值
     /// 命令执行成功返回 Ok(())，失败返回 YsError
-    fn run_svn_command(
-        args: &[&str],
-        working_dir: Option<&Path>,
-    ) -> Result<String, YsError> {
+    fn run_svn_command(args: &[&str], working_dir: Option<&Path>) -> Result<String, YsError> {
         let mut cmd = Command::new("svn");
         cmd.args(args);
 
@@ -136,9 +122,7 @@ where
 
         if !output.status.success() {
             let error_msg = String::from_utf8_lossy(&output.stderr);
-            return Err(ys_types::YsErrorKind::External {
-                message: format!("SVN 命令执行失败: {}", error_msg),
-            }.into());
+            return Err(ys_types::YsErrorKind::External { message: format!("SVN 命令执行失败: {}", error_msg) }.into());
         }
 
         let stdout = String::from_utf8_lossy(&output.stdout).to_string();

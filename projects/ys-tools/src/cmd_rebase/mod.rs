@@ -1,9 +1,8 @@
 use clap::Args;
-use std::collections::BTreeSet;
-use std::env::current_dir;
+use std::{collections::BTreeSet, env::current_dir};
 use ys_types::{
+    Commit, ObjectID, ObjectProxy, SnapShotData, YsError,
     initialize::{DotYuanShenClient, YuanShenClient},
-    ObjectID, ObjectProxy, Commit, SnapShotData, YsError,
 };
 
 /// Rebase 命令参数
@@ -16,7 +15,7 @@ pub struct YuanShenRebase {
 
 impl YuanShenRebase {
     /// 执行 Rebase 命令，将当前分支变基到目标分支
-    /// 
+    ///
     /// # 功能说明
     /// - 查找当前分支和目标分支的共同祖先
     /// - 收集当前分支从共同祖先之后的所有提交
@@ -37,15 +36,20 @@ impl YuanShenRebase {
     }
 
     /// 查找两个提交的共同祖先
-    /// 
+    ///
     /// # 参数
     /// - store: 对象存储
     /// - a: 第一个提交 ID
     /// - b: 第二个提交 ID
-    /// 
+    ///
     /// # 返回
     /// - 共同祖先的提交 ID
-    async fn find_common_ancestor(&self, store: &ys_storage::LocalDotYuanShen, a: ObjectID, b: ObjectID) -> Result<ObjectID, YsError> {
+    async fn find_common_ancestor(
+        &self,
+        store: &ys_storage::LocalDotYuanShen,
+        a: ObjectID,
+        b: ObjectID,
+    ) -> Result<ObjectID, YsError> {
         if a == b {
             return Ok(a);
         }
@@ -89,15 +93,20 @@ impl YuanShenRebase {
     }
 
     /// 收集从 start 到 base 之间的所有提交（不包括 base）
-    /// 
+    ///
     /// # 参数
     /// - store: 对象存储
     /// - start: 起始提交 ID
     /// - base: 基础提交 ID（共同祖先）
-    /// 
+    ///
     /// # 返回
     /// - 提交列表，按从旧到新的顺序排列
-    async fn collect_commits(&self, store: &ys_storage::LocalDotYuanShen, start: ObjectID, base: ObjectID) -> Result<Vec<Commit>, YsError> {
+    async fn collect_commits(
+        &self,
+        store: &ys_storage::LocalDotYuanShen,
+        start: ObjectID,
+        base: ObjectID,
+    ) -> Result<Vec<Commit>, YsError> {
         let mut commits: Vec<Commit> = Vec::new();
         let mut current = start;
 
@@ -115,15 +124,20 @@ impl YuanShenRebase {
     }
 
     /// 将收集到的提交逐个应用到目标提交之上
-    /// 
+    ///
     /// # 参数
     /// - store: 对象存储
     /// - target: 目标提交 ID
     /// - commits: 要应用的提交列表
-    /// 
+    ///
     /// # 返回
     /// - 最后一个应用的提交的 ID
-    async fn apply_commits(&self, store: &ys_storage::LocalDotYuanShen, target: ObjectID, commits: &[Commit]) -> Result<ObjectID, YsError> {
+    async fn apply_commits(
+        &self,
+        store: &ys_storage::LocalDotYuanShen,
+        target: ObjectID,
+        commits: &[Commit],
+    ) -> Result<ObjectID, YsError> {
         let mut current_tip = target;
 
         for commit in commits {

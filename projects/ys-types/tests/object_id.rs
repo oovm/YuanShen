@@ -1,6 +1,5 @@
+use std::{fs::File, path::Path};
 use ys_types::objects::ObjectID;
-use std::path::Path;
-use std::fs::File;
 
 #[test]
 fn test_try_from() {

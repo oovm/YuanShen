@@ -1,7 +1,7 @@
 use crate::{YsError, YsErrorKind};
 use blake3::Hash;
 use serde::{Deserialize, Serialize};
-use serde_json::{ser::PrettyFormatter, Serializer};
+use serde_json::{Serializer, ser::PrettyFormatter};
 use std::{
     fmt::Formatter,
     fs::File,
@@ -58,8 +58,8 @@ where
     Ok(buffer)
 }
 
-use uuid::Uuid;
 use crate::objects::ObjectID;
+use uuid::Uuid;
 
 pub fn hash_json<A>(thing: &A) -> Result<ObjectID, YsError>
 where
@@ -92,7 +92,6 @@ pub async fn read_to_string(path: PathBuf) -> Result<String, YsError> {
             return Err(YsErrorKind::IO { error: e, path: Some(path) })?;
         }
     }
-
 }
 
 #[allow(dead_code)]
@@ -102,8 +101,6 @@ pub async fn copy(source: &Path, target: PathBuf) -> Result<(), YsError> {
         Err(e) => Err(YsError::path_error(e, target)),
     }
 }
-
-
 
 /// Create a test environment which returns the [Result<()>]
 pub fn async_test<F>(future: F)

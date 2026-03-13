@@ -1,6 +1,6 @@
 use clap::Args;
 use std::{borrow::Cow, env::current_dir};
-use ys_types::{initialize::InitializeConfig, IgnoreRules, YsError};
+use ys_types::{IgnoreRules, YsError, initialize::InitializeConfig};
 
 /// 初始化命令参数
 ///

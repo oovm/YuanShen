@@ -10,7 +10,7 @@ pub use in_memory::MemoryObjectPool;
 #[cfg(feature = "limbo")]
 pub use limbo_fs::LimboFsStorage;
 
-use ys_types::{ObjectProxy, BranchProxy, GarbageCollect};
+use ys_types::{BranchProxy, GarbageCollect, ObjectProxy};
 
 /// A unified trait that combines ObjectProxy and BranchProxy
 pub trait StorageBackend: ObjectProxy + BranchProxy + Send + Sync {}

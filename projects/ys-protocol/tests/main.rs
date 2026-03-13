@@ -1,6 +1,6 @@
-use ys_protocol::git::{PktLine, PktLineCodec};
 use bytes::{Bytes, BytesMut};
 use tokio_util::codec::{Decoder, Encoder};
+use ys_protocol::git::{PktLine, PktLineCodec};
 
 #[test]
 fn ready() {
@@ -53,4 +53,3 @@ fn integration_test_pkt_line_series() {
         assert_eq!(decoded, expected);
     }
 }
-

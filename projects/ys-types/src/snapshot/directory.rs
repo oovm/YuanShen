@@ -1,13 +1,13 @@
-use std::{collections::BTreeMap, path::Path};
+use std::{collections::BTreeMap, fs, path::Path};
 
-use serde::{ser::SerializeMap, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, ser::SerializeMap};
 
 use crate::{
-    objects::{IgnoreRules, ObjectID, TextFile, },
+    ObjectProxy, YsError,
+    objects::{IgnoreRules, ObjectID, TextFile, TextIncrementalFile},
     traits::YuanShenObject,
-    YsError, ObjectProxy,
+    utils::hash_json,
 };
-use crate::objects::{ TextIncrementalFile};
 
 /// A directory tree, with [`ObjectID`]s at the leaves.
 #[derive(PartialEq, Eq, Debug, Clone, Default)]
@@ -29,11 +29,12 @@ impl Serialize for SnapShotTree {
 }
 
 impl<'de> Deserialize<'de> for SnapShotTree {
-    fn deserialize<D>(_deserializer: D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        todo!()
+        let root = BTreeMap::deserialize(deserializer)?;
+        Ok(SnapShotTree { root })
     }
 }
 
@@ -45,7 +46,6 @@ pub enum DirectoryEntry {
     /// A reference to other snapshots.
     Subtree(SubTreeObject),
 }
-
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct DirectoryObject {
@@ -66,11 +66,12 @@ impl Serialize for DirectoryObject {
 }
 
 impl<'de> Deserialize<'de> for DirectoryObject {
-    fn deserialize<D>(_deserializer: D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        todo!()
+        let entries = BTreeMap::deserialize(deserializer)?;
+        Ok(DirectoryObject { entries })
     }
 }
 
@@ -81,7 +82,13 @@ pub struct SubTreeObject {
 
 impl YuanShenObject for SnapShotTree {
     fn object_id(&self) -> ObjectID {
-        todo!()
+        hash_json(self).unwrap()
+    }
+}
+
+impl YuanShenObject for DirectoryObject {
+    fn object_id(&self) -> ObjectID {
+        hash_json(self).unwrap()
     }
 }
 
@@ -95,7 +102,30 @@ impl SnapShotTree {
 }
 
 impl SnapShotTree {
-    pub fn new<Store: ObjectProxy>(_dir: &Path, _ignores: &IgnoreRules, _store: &mut Store) -> Result<Self, YsError> {
-        todo!();
+    pub async fn new<Store: ObjectProxy>(dir: &Path, _ignores: &IgnoreRules, store: &mut Store) -> Result<Self, YsError> {
+        let mut root = BTreeMap::new();
+        
+        if let Ok(entries) = fs::read_dir(dir) {
+            for entry in entries {
+                let entry = entry?;
+                let path = entry.path();
+                let file_name = entry.file_name();
+                let file_name_str = file_name.to_string_lossy().to_string();
+                
+                if path.is_dir() {
+                    if file_name_str == ".ys" {
+                        continue;
+                    }
+                }
+                
+                if path.is_file() {
+                    let content = fs::read_to_string(&path)?;
+                    let text_file = store.put_string(&content).await?;
+                    root.insert(file_name_str, DirectoryEntry::TextStandalone(text_file));
+                }
+            }
+        }
+        
+        Ok(SnapShotTree { root })
     }
 }

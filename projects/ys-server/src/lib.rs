@@ -1,5 +1,4 @@
-use tokio::net::TcpListener;
-use tokio::net::TcpStream;
+use tokio::net::{TcpListener, TcpStream};
 use ys_gateway::Gateway;
 use ys_storage::StorageBackend;
 use ys_types::YsError;
@@ -62,7 +61,7 @@ where
     /// 当启动服务器失败时返回 YsError
     pub async fn listen(&self, addr: &str) -> Result<(), YsError> {
         let listener = TcpListener::bind(addr).await?;
-        
+
         loop {
             let (stream, _) = listener.accept().await?;
             self.handle_connection(stream).await?;
